@@ -49,13 +49,13 @@ class Enemies(pygame.sprite.Sprite):
 
         # checks which type of enemy was spawned
         if enemy == "basic":
-            self.image = pygame.image.load("enemy_images/enemy1.png")
+            self.image = pygame.image.load("main/enemy_images/enemy1.png")
             self.tier = 1
             self.speed = 1
             self.hp = 1
 
         if enemy == "tank":
-            self.image = pygame.image.load("b_bullet.png")
+            self.image = pygame.image.load("main/b_bullet.png")
             self.tier = 1
             self.speed = 0.5
             self.hp = 100
@@ -129,11 +129,11 @@ class Towers(pygame.sprite.Sprite):
         self.rotation_angle = 0
         self.exported_angle = 0
 
-        self.image = pygame.image.load(f"tower_images/{tower}_turret.png")
+        self.image = pygame.image.load(f"main/tower_images/{tower}_turret.png")
         # f stands for firing
-        self.f_image = pygame.image.load(f"tower_images/f_{tower}_turret.png")
+        self.f_image = pygame.image.load(f"main/tower_images/f_{tower}_turret.png")
         # b stands for base(refers to the towers base)
-        self.b_image = pygame.image.load(f"tower_images/{tower}_base.png")
+        self.b_image = pygame.image.load(f"main/tower_images/{tower}_base.png")
 
         # towers damage
         self.dmg = 0
@@ -296,7 +296,7 @@ class Tower_Projectiles(pygame.sprite.Sprite):
 
         # checks which projectile was spawned
         if projectile == "basic":
-            self.image = pygame.image.load("b_bullet.png")
+            self.image = pygame.image.load("main/b_bullet.png")
             self.speed = 300
             # think of pierce as bullet hp
             self.pierce = 1
@@ -344,12 +344,12 @@ class Shop(pygame.sprite.Sprite):
 
         # checks which shop item was initiated
         if shop == "panel":
-            self.image = pygame.image.load("shop_images/shopui.png")
+            self.image = pygame.image.load("main/shop_images/shopui.png")
             self.open = False
 
         # to add more towers copy and paste the code below and continue to elif
         elif shop == "basic": # change the string to relating tower name defined in the Tower class
-            self.image = pygame.image.load("tower_images/towerbase1.png")
+            self.image = pygame.image.load(f"main/tower_images/{shop}_base.png")
             # the cost of the tower
             self.cost = 100
 
