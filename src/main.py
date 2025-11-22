@@ -1,6 +1,7 @@
 import pygame
 import math
 
+from image_loader import ImageLoader, Images
 from tower_aiming import point_enemy
 from map_sys import map
 
@@ -49,13 +50,13 @@ class Enemies(pygame.sprite.Sprite):
 
         # checks which type of enemy was spawned
         if enemy == "basic":
-            self.image = pygame.image.load("enemy_images/enemy1.png")
+            self.image = ImageLoader.load(Images.ENEMY1)
             self.tier = 1
             self.speed = 1
             self.hp = 1
 
         if enemy == "tank":
-            self.image = pygame.image.load("b_bullet.png")
+            self.image = ImageLoader.load(Images.BULLET)
             self.tier = 1
             self.speed = 0.5
             self.hp = 100
@@ -84,23 +85,19 @@ class Enemies(pygame.sprite.Sprite):
             self.rect.centerx = self.x
             self.rect.centery = self.y
 
-            # determines if the enemy actually made it to it's destination
+            def at_destination():
+                self.current_node += 1
+                self.rect.centerx = destination[0]
+                self.rect.centery = destination[1]
+
             if (dx >= 0 and self.rect.centerx >= destination[0]) and (dy >= 0 and self.rect.centery >= destination[1]):
-                self.current_node += 1
-                self.rect.centerx = destination[0]
-                self.rect.centery = destination[1]
+                at_destination()
             elif (dx >= 0 and self.rect.centerx >= destination[0]) and (dy <= 0 and self.rect.centery <= destination[1]):
-                self.current_node += 1
-                self.rect.centerx = destination[0]
-                self.rect.centery = destination[1]
+                at_destination()
             elif (dx <= 0 and self.rect.centerx <= destination[0]) and (dy >= 0 and self.rect.centery >= destination[1]):
-                self.current_node += 1
-                self.rect.centerx = destination[0]
-                self.rect.centery = destination[1]
+                at_destination()
             elif (dx <= 0 and self.rect.centerx <= destination[0]) and (dy <= 0 and self.rect.centery <= destination[1]):
-                self.current_node += 1
-                self.rect.centerx = destination[0]
-                self.rect.centery = destination[1]
+                at_destination()
 
             return 0
 
@@ -116,7 +113,7 @@ class Enemies(pygame.sprite.Sprite):
 
 # defines the class Towers
 class Towers(pygame.sprite.Sprite):
-    def __init__(self, tower, x, y):
+    def __init__(self, tower : str, x : int, y : int):
         super().__init__()
 
         self.tower = tower
@@ -129,11 +126,7 @@ class Towers(pygame.sprite.Sprite):
         self.rotation_angle = 0
         self.exported_angle = 0
 
-        self.image = pygame.image.load(f"tower_images/{tower}_turret.png")
-        # f stands for firing
-        self.f_image = pygame.image.load(f"tower_images/f_{tower}_turret.png")
-        # b stands for base(refers to the towers base)
-        self.b_image = pygame.image.load(f"tower_images/{tower}_base.png")
+        self.base_image, self.image, self.firing_image = ImageLoader.load_tower(tower)
 
         # towers damage
         self.dmg = 0
@@ -161,7 +154,7 @@ class Towers(pygame.sprite.Sprite):
         
         self.rect = self.image.get_rect(center=(x, y))
 
-        self.b_rect = self.b_image.get_rect(center=(x, y))
+        self.b_rect = self.base_image.get_rect(center=(x, y))
 
         self.height = self.image.get_height()
     
@@ -183,13 +176,13 @@ class Towers(pygame.sprite.Sprite):
 
         # if shooting, switches image to shooting image
         if self.firing:
-            self.r_image = pygame.transform.rotate(self.f_image, self.current_angle)
+            self.r_image = pygame.transform.rotate(self.firing_image, self.current_angle)
             self.rect = self.r_image.get_rect(center=(xy[0], xy[1]))
         
         x = math.cos(math.radians(90+self.current_angle))*self.height/2
         y = math.sin(math.radians(90+self.current_angle))*self.height/2
 
-        screen.blit(self.b_image, self.b_rect)
+        screen.blit(self.base_image, self.b_rect)
         screen.blit(self.r_image, (self.rect.x+x, self.rect.y-y))
 
     # determines whether the tower can shoot yet
@@ -296,7 +289,7 @@ class Tower_Projectiles(pygame.sprite.Sprite):
 
         # checks which projectile was spawned
         if projectile == "basic":
-            self.image = pygame.image.load("b_bullet.png")
+            self.image = ImageLoader.Load(Images.BULLET)
             self.speed = 300
             # think of pierce as bullet hp
             self.pierce = 1
@@ -344,12 +337,12 @@ class Shop(pygame.sprite.Sprite):
 
         # checks which shop item was initiated
         if shop == "panel":
-            self.image = pygame.image.load("shop_images/shopui.png")
+            self.image = ImageLoader.load(Images.SHOP_UI)
             self.open = False
 
         # to add more towers copy and paste the code below and continue to elif
         elif shop == "basic": # change the string to relating tower name defined in the Tower class
-            self.image = pygame.image.load("tower_images/towerbase1.png")
+            self.image = ImageLoader.load(Images.BASIC_TOWER)
             # the cost of the tower
             self.cost = 100
 
@@ -421,8 +414,10 @@ def stats(money, hp):
     text = stat_font.render(f'Health: {hp}', True, "black")
     screen.blit(text, (5, 35))
 
-
-path, movement_nodes, map_offsets = map("path1")
+# --------------------------------------------------- #
+# Main                                                #
+# --------------------------------------------------- #
+path, movement_nodes, map_offsets = map("map1")
 
 
 # defines the towers group

@@ -1,9 +1,11 @@
 import pygame
 
+from image_loader import ImageLoader
+
 # the map system
-def map(map):
+def map(map : str):
     # loads the map based off of selected map
-    path = pygame.image.load("map_images/"+map+".png")
+    path = ImageLoader.load_map(map)
     # defines movement_nodes so it doesn't break if given an invalid map name
     movement_nodes = []
     map_offsets = ()

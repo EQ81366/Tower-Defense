@@ -1,11 +1,12 @@
 import pygame
+from image_loader import ImageLoader, Images
 
 pygame.init()
 running = True
 
 screen = pygame.display.set_mode((1280, 720))
 
-o_image = pygame.image.load("enemy_images/enemy1.png")
+o_image = ImageLoader.load(Images.ENEMY1)
 pixel_array = pygame.PixelArray(o_image)
 pixel_array.replace((0, 0, 0), (255, 0, 0))
 del pixel_array
