@@ -1,8 +1,7 @@
-import pygame, math
+import pygame, math, constants, image_paths
 
 from tower_aiming import point_enemy
 from map_sys import map
-import constants
 
 # TO-DO LIST
 # 1. make various ui stuff
@@ -36,9 +35,10 @@ money, hp = constants.stat_constants()
 
 path, movement_nodes, map_offsets = map("path1")
 
+
+
 # defines the class Enemies
 class Enemies(pygame.sprite.Sprite):
-    image_path = ["main/enemy_images/", "_enemy.png"]
     def __init__(self, enemy : str, x : int, y : int):
         super().__init__()
 
@@ -47,19 +47,25 @@ class Enemies(pygame.sprite.Sprite):
         self.x = float(x)
         self.y = float(y)
 
-        # default info
-        info = constants.enemy_constants()[0]
+        # default value
+        enemy_type_number = 0
 
         # checks which type of enemy was spawned
         if enemy == "basic":
-            info = constants.enemy_constants()[0]
-        elif enemy == "tank":
-            info = constants.enemy_constants()[1]
+            enemy_type_number = 0
 
-        self.image = pygame.image.load(self.image_path[0]+enemy+self.image_path[1]) # ignore this right now
-        self.tier : str = str(info[1])
-        self.speed : float = float(info[2])
-        self.hp : float = float(info[3])
+        elif enemy == "tank":
+            enemy_type_number = 1
+
+        info = constants.enemy_constants()[enemy_type_number]
+
+        image_path = image_paths.enemy_image_path(enemy_type_number)
+
+        self.image = pygame.image.load(image_path)
+
+        self.tier = str(info[1])
+        self.speed = float(info[2])
+        self.hp = int(info[3])
         self.max_hp = self.hp
 
         self.rect = self.image.get_rect(center=(x, y))
@@ -84,23 +90,20 @@ class Enemies(pygame.sprite.Sprite):
             self.rect.centerx = int(self.x)
             self.rect.centery = int(self.y)
 
+            def at_destination():
+                self.current_node += 1
+                self.rect.centerx = destination[0]
+                self.rect.centery = destination[1]
+
             # determines if the enemy actually made it to it's destination
             if (dx >= 0 and self.rect.centerx >= destination[0]) and (dy >= 0 and self.rect.centery >= destination[1]):
-                self.current_node += 1
-                self.rect.centerx = destination[0]
-                self.rect.centery = destination[1]
+                at_destination()
             elif (dx >= 0 and self.rect.centerx >= destination[0]) and (dy <= 0 and self.rect.centery <= destination[1]):
-                self.current_node += 1
-                self.rect.centerx = destination[0]
-                self.rect.centery = destination[1]
+                at_destination()
             elif (dx <= 0 and self.rect.centerx <= destination[0]) and (dy >= 0 and self.rect.centery >= destination[1]):
-                self.current_node += 1
-                self.rect.centerx = destination[0]
-                self.rect.centery = destination[1]
+                at_destination()
             elif (dx <= 0 and self.rect.centerx <= destination[0]) and (dy <= 0 and self.rect.centery <= destination[1]):
-                self.current_node += 1
-                self.rect.centerx = destination[0]
-                self.rect.centery = destination[1]
+                at_destination()
 
             return 0
 
@@ -131,27 +134,30 @@ class Towers(pygame.sprite.Sprite):
         self.rotation_angle = 0
         self.exported_angle = 0
 
-        self.image = pygame.image.load(f"main/tower_images/{tower}_turret.png")
-        # f stands for firing
-        self.f_image = pygame.image.load(f"main/tower_images/f_{tower}_turret.png")
-        # b stands for base(refers to the towers base)
-        self.b_image = pygame.image.load(f"main/tower_images/{tower}_base.png")
-
-        # towers damage
-        self.dmg = 0
-        # towers cooldown
-        self.cd = 0
-        # towers rotational speed
-        self.r_speed = 0
-        # targeting mode(default is efficient)
-        self.targeting_mode = "first"
+        # default value
+        tower_type_number = 0
 
         # checks which type of tower was spawned
-        # you can add more towers using these variables
         if tower == "basic":
-            self.dmg = 1
-            self.cd = 60
-            self.r_speed = 1000000
+            tower_type_number = 0
+        
+        info = constants.tower_constants()[tower_type_number]
+
+        image_path_list = image_paths.tower_image_path_list(tower_type_number)
+
+        self.image = pygame.image.load(image_path_list[0])
+        # f stands for firing
+        self.f_image = pygame.image.load(image_path_list[1])
+        # b stands for base(refers to the towers base)
+        self.b_image = pygame.image.load(image_path_list[2])
+
+        self.dmg = int(info[1])
+        self.cd = int(info[2])
+        self.r_speed = int(info[3])
+
+        # targeting mode(default is rotationaly efficient)
+        self.targeting_mode = "default"
+        self.targeting_mode = "first"
 
         # makes sure there is no firing cooldown on placement
         self.wait = self.cd
@@ -344,19 +350,23 @@ class Shop(pygame.sprite.Sprite):
         self.original_x = x
         self.original_y = y
 
+        # default value for non-panel shop items
+        tower_number = 0
+
         # checks which shop item was initiated
         if shop == "panel":
-            self.image = pygame.image.load("main/shop_images/shopui.png")
+            self.image = pygame.image.load(image_paths.shop_image_path(shop))
             self.open = False
 
         # to add more towers copy and paste the code below and continue to elif
         elif shop == "basic": # change the string to relating tower name defined in the Tower class
-            self.image = pygame.image.load(f"main/tower_images/{shop}_base.png")
+            tower_number = 0
             # the cost of the tower
             self.cost = 100
 
         # defines generic things for non-panel shop items
         if shop != "panel":
+            self.image = pygame.image.load(image_paths.tower_image_path_list(tower_number)[2])
             self.text = shop_font.render(f'{shop.capitalize()} ${self.cost}', True, "black")
             self.clicked = False
 
@@ -501,11 +511,8 @@ while running:
 
     x += 1
     if x > 100:
-        #enemies.add(Enemies("basic", 8, 280))
         enemies.add(Enemies("basic", 8, 280)) # type: ignore
         x = 80
-
-    #print(len(enemies))
 
     pygame.display.flip()
     clock.tick(60)
