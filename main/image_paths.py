@@ -20,10 +20,10 @@ def tower_image_path_list(tower_type_number : int):
         base_image_path
     ]
 
-def shop_image_path(shop_item : str):
+def shop_image_path(shop_type_number : int):
     image_folder = Path("main/shop_images")
-    image_path = ""
-    if shop_item == "panel":
-        image_path = str(list(image_folder.glob("*shopui.png"))[0])
+    image_path = str(list(image_folder.glob("*ui.png"))[shop_type_number])
+        #image_path = str(list(image_folder.glob("*shopui.png"))[0])
+    
 
     return image_path

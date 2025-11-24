@@ -22,6 +22,7 @@ screen = pygame.display.set_mode((1280, 720)) # in pixels
 clock = pygame.time.Clock()
 running = True
 
+tower_stat_font = pygame.font.SysFont('Arial', 19)
 shop_font = pygame.font.SysFont('Arial', 25)
 stat_font = pygame.font.SysFont('Arial', 30)
 
@@ -350,25 +351,42 @@ class Shop(pygame.sprite.Sprite):
         self.original_x = x
         self.original_y = y
 
-        # default value for non-panel shop items
-        tower_number = 0
+        # default value for panel/descriptive shop items
+        shop_type_number = 0
+
+        # default value for non-panel/descriptive shop items
+        tower_type_number = 0
 
         # checks which shop item was initiated
         if shop == "panel":
-            self.image = pygame.image.load(image_paths.shop_image_path(shop))
+            shop_type_number = 0
             self.open = False
+
+        elif shop == "description":
+            shop_type_number = 1
 
         # to add more towers copy and paste the code below and continue to elif
         elif shop == "basic": # change the string to relating tower name defined in the Tower class
-            tower_number = 0
+            tower_type_number = 0
             # the cost of the tower
             self.cost = 100
 
         # defines generic things for non-panel shop items
-        if shop != "panel":
-            self.image = pygame.image.load(image_paths.tower_image_path_list(tower_number)[2])
+        if shop != "panel" and shop != "description":
+            self.cost = int(constants.tower_constants()[tower_type_number][4])
+            # loads a tower base image
+            self.image = pygame.image.load(image_paths.tower_image_path_list(tower_type_number)[2])
             self.text = shop_font.render(f'{shop.capitalize()} ${self.cost}', True, "black")
+            tower_stats = constants.tower_constants()[tower_type_number]
+            self.description = [
+                tower_stat_font.render(f'{self.shop.capitalize()}:', True, "black"),
+                tower_stat_font.render(f'Damage: {tower_stats[1]}', True, "black"),
+                tower_stat_font.render(f'Cooldown: {tower_stats[2]}', True, "black"),
+                tower_stat_font.render(f'R-Speed: {tower_stats[3]}', True, "black")
+            ]
             self.clicked = False
+        else:
+            self.image = pygame.image.load(image_paths.shop_image_path(shop_type_number))
 
         self.rect = self.image.get_rect(center=(x, y))
 
@@ -387,24 +405,29 @@ class Shop(pygame.sprite.Sprite):
 
     # checks if the shop is open and if so, displays all the items in the shop
     def showing(self, open : bool):
+        hovering_on_tower = False
         if open:
             screen.blit(self.image, self.rect)
             screen.blit(self.text, (self.rect.centerx-self.text.get_width()/2, self.rect.centery+self.rect.height/2))
 
             # if the mouse is down when hovering over an item in the shop, it will wait until mouse not down, and attempt to buy that item
-            if money >= self.cost:
-                if mouse_xy[0] >= self.rect.x and mouse_xy[0] < self.rect.x+self.rect.width and mouse_xy[1] >= self.rect.y and mouse_xy[1] < self.rect.y+self.rect.height:
-                    # hovering_on_tower used to determine whether to show tower stats
-                    self.hovering_on_tower = True
+            if mouse_xy[0] >= self.rect.x and mouse_xy[0] < self.rect.x+self.rect.width and mouse_xy[1] >= self.rect.y and mouse_xy[1] < self.rect.y+self.rect.height:
+                # hovering_on_tower used to determine whether to show tower stats
+                hovering_on_tower = True
+                if money >= self.cost:
                     if pygame.mouse.get_pressed()[0] and not self.clicked:
                         self.clicked = True
                     elif not pygame.mouse.get_pressed()[0] and self.clicked:
                         self.clicked = False
-                        return True, self.cost
-                else:
-                    self.hovering_on_tower = False
-        return False, 0
-    
+                        return True, hovering_on_tower, self.cost, self.description
+            else:
+                hovering_on_tower = False
+        
+        if hovering_on_tower:
+            return False, hovering_on_tower, 0, self.description
+        else:
+            return False, hovering_on_tower, 0
+        
     # if the user bought a tower from the shop, it will follow the mouse until placed
     def place_tower(self):
         self.rect.centerx = mouse_xy[0]
@@ -431,10 +454,14 @@ class Shop(pygame.sprite.Sprite):
         
         return True
     
-    def show_stats(self):
-        if self.hovering_on_tower:
-            pass
-            
+    def show_stats(self, open : bool, hovering_on_tower : bool, tower_stats : list[pygame.Surface]|None):
+        if open:
+            if hovering_on_tower:
+                self.rect.bottomleft = mouse_xy
+                screen.blit(self.image, self.rect)
+                if tower_stats != None:
+                    for i in range(len(tower_stats)):
+                        screen.blit(tower_stats[i], (self.rect.topleft[0]+10, self.rect.topleft[1]+5+20*i))
 
     
 def stats(money : int, hp : int):
@@ -460,6 +487,7 @@ shop = pygame.sprite.Group() # type: ignore
 
 shop.add(Shop("panel", 640, 900)) # type: ignore
 shop.add(Shop("basic", 100, 540)) # type: ignore
+shop.add(Shop("description", 0, 0)) # type: ignore
  
 # and so begins the main script
 x = 0
@@ -491,18 +519,25 @@ while running:
         hp -= int(sprite.pathfind()) # type: ignore
 
     # cycles through all the necessary commands for the shop group
+    hovering_on_tower = False
+    tower_stats = None
     for sprite in shop: # type: ignore
         # only runs hovering function for the panel type in the shop group
         if sprite.shop == "panel": # type: ignore
             open = bool(sprite.hovering()) # type: ignore
         # runs normally for all other types in the shop group
-        else:
+        elif sprite.shop != "panel" and sprite.shop != "description": # type: ignore
             if not placing_tower:
-                temp_pkg : list[bool|int] = sprite.showing(open) # type: ignore
+                temp_pkg = sprite.showing(open) # type: ignore
                 placing_tower = bool(temp_pkg[0]) # type: ignore
-                money -= int(temp_pkg[1]) # type: ignore
+                hovering_on_tower = bool(temp_pkg[1]) # type: ignore
+                if hovering_on_tower:
+                    tower_stats = temp_pkg[3] # type: ignore
+                money -= int(temp_pkg[2]) # type: ignore
             else:
                 placing_tower = bool(sprite.place_tower()) # type: ignore
+        else:
+            sprite.show_stats(open, hovering_on_tower, tower_stats) # type: ignore
 
     # draws the enemies on the screen
     enemies.draw(screen)
@@ -512,7 +547,7 @@ while running:
     x += 1
     if x > 100:
         enemies.add(Enemies("basic", 8, 280)) # type: ignore
-        x = 80
+        x = 50
 
     pygame.display.flip()
     clock.tick(60)
