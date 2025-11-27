@@ -10,5 +10,5 @@ for enum_val in enum:
     hi[enum_val.name] = f"assets/{enum_val.name}" 
 
 
-print(hi)
+print("hi")
 #EnumPaths : hi[Enum, str] = {}

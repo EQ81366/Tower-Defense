@@ -1,8 +1,10 @@
 import pygame, constants, math
 
+from constants import TargetingStates
 from tower_aiming import point_enemy
 from map_sys import map
 from image_loader import load_images, EnemyType, TowerType, ShopType, UpgradeType
+import warnings
 
 # TO-DO LIST
 # 1. make various ui stuff
@@ -107,11 +109,16 @@ class Enemies(pygame.sprite.Sprite):
             self.kill()
             # returns the amount of damage to deal
             return self.tier
+            
+    def handle_kill(self):
+        # money = 10 
+        self.kill()
         
     def damage(self, damage : float):
         self.hp -= damage
         if not self.hp > 0:
-            self.kill()
+            self.handle_kill()
+
 
 
 # defines the class Towers
@@ -153,8 +160,8 @@ class Towers(pygame.sprite.Sprite):
         self.range_circle = pygame.transform.scale(self.range_circle, (self.range*2, self.range*2))
 
         # targeting mode(default is rotationaly efficient)
-        self.targeting_mode = "default"
-        self.targeting_mode = "first"
+        self.targeting_mode = TargetingStates.Default
+        self.targeting_mode = TargetingStates.First
 
         # makes sure there is no firing cooldown on placement
         self.wait = self.cd
@@ -199,8 +206,16 @@ class Towers(pygame.sprite.Sprite):
         screen.blit(self.r_image, (self.rect.x+x, self.rect.y-y))
 
     # determines whether the tower can shoot yet
-    # CURRENTLY OBSOLETE(most likely will not be added again)
     def shoot(self):
+        """
+        Deprecated function shoot(self).
+        """
+        warnings.warn(
+            "shoot(self) is obsolete and may be removed in a future release. "
+            "Thing to use (IDK what to use)",
+            category=DeprecationWarning,
+            stacklevel=2
+        )
         self.shoot_enemy = False
         if self.wait >= self.cd and self.current_angle >= self.rotation_angle-2 and self.current_angle <= self.rotation_angle+2:
             #  ⌄⌄⌄⌄⌄⌄⌄⌄⌄⌄⌄⌄⌄⌄⌄⌄⌄⌄⌄⌄⌄⌄⌄⌄⌄⌄⌄⌄⌄⌄⌄⌄⌄⌄⌄⌄uncomment this for bullets⌄⌄⌄⌄⌄⌄⌄⌄⌄⌄⌄⌄⌄⌄⌄⌄⌄⌄⌄⌄⌄⌄⌄⌄⌄⌄⌄⌄⌄⌄⌄⌄⌄⌄⌄⌄⌄⌄⌄⌄⌄⌄⌄
@@ -216,30 +231,14 @@ class Towers(pygame.sprite.Sprite):
             self.firing = False
 
     # finds the closest enemy
-    def find_closest_enemy(self):
+    def use_targeting_method(self):
         # high default distance so as to not interfere with anythin
         if self.wait > self.cd/5 or self.wait == 0:
             x = 0
             closest_id = 0
 
-            # targets closest enemy
-            if self.targeting_mode == "closest":
-                distance = 99999
-                closest_distance = distance
-                
-                for sprite in enemies: # type: ignore
-                    dx : int = int(sprite.rect.centerx) - self.rect.centerx # type: ignore
-                    dy : int = int(sprite.rect.centery) - self.rect.centery # type: ignore
-                    distance = math.hypot(dx, dy)
-
-                    x += 1
-
-                    if distance < closest_distance and distance <= self.range:
-                        closest_distance = distance
-                        closest_id = x
-
             # targets the most "efficient" enemy; whichever enemy is fastest to shoot
-            elif self.targeting_mode == "efficiency" or self.targeting_mode == "default":
+            if self.targeting_mode == TargetingStates.Efficiency or self.targeting_mode == TargetingStates.Default:
                 dr = 99999
                 lowest_dr = dr
                 for sprite in enemies: # type: ignore
@@ -256,8 +255,24 @@ class Towers(pygame.sprite.Sprite):
                         lowest_dr = dr
                         closest_id = x
 
+            # targets closest enemy
+            elif self.targeting_mode == TargetingStates.Closest:
+                distance = 99999
+                closest_distance = distance
+                
+                for sprite in enemies: # type: ignore
+                    dx : int = int(sprite.rect.centerx) - self.rect.centerx # type: ignore
+                    dy : int = int(sprite.rect.centery) - self.rect.centery # type: ignore
+                    distance = math.hypot(dx, dy)
+
+                    x += 1
+
+                    if distance < closest_distance and distance <= self.range:
+                        closest_distance = distance
+                        closest_id = x
+
             # targets the furthest most enemy in range
-            elif self.targeting_mode == "first":
+            elif self.targeting_mode == TargetingStates.First:
                 for sprite in enemies: # type: ignore
                     dx : int = int(sprite.rect.centerx) - self.rect.centerx # type: ignore
                     dy : int = int(sprite.rect.centery) - self.rect.centery # type: ignore
@@ -274,7 +289,7 @@ class Towers(pygame.sprite.Sprite):
                 #    closest_id = x
 
             # targets the furthest back enemy in range
-            elif self.targeting_mode == "last":
+            elif self.targeting_mode == TargetingStates.Last:
                 for sprite in enemies: # type: ignore
                     dx : int = int(sprite.rect.centerx) - self.rect.centerx # type: ignore
                     dy : int = int(sprite.rect.centery) - self.rect.centery # type: ignore
@@ -288,7 +303,7 @@ class Towers(pygame.sprite.Sprite):
                 #closest_id = len(enemies) # type: ignore
 
             # targets the enemy with the most hp
-            elif self.targeting_mode == "strong":
+            elif self.targeting_mode == TargetingStates.Strong:
                 e_hp = 0
                 highest_e_hp = e_hp
                 for sprite in enemies: # type: ignore
@@ -341,8 +356,16 @@ class Towers(pygame.sprite.Sprite):
 
 
 # defines the Tower_Projectiles class
-# CURRENTLY OBSOLETE(most likely will not be added again)
 class Tower_Projectiles(pygame.sprite.Sprite):
+    """
+    Deprecated class.
+    """
+    warnings.warn(
+        "Tower_Projectiles(pygame.sprite.Sprite) is obsolete and may be removed in a future release. "
+        "Thing to use (IDK what to use)",
+        category=DeprecationWarning,
+        stacklevel=2
+    )
     def __init__(self, projectile : str, x : int, y : int, angle : float):    
         super().__init__()
 
@@ -568,7 +591,7 @@ while running:
     # cycles through all the necessary commands for the towers group
     for sprite in towers: # type: ignore
         sprite.wait += 1 # type: ignore
-        sprite.find_closest_enemy() # type: ignore
+        sprite.use_targeting_method() # type: ignore
         #sprite.shoot()
         sprite.unfire() # type: ignore
         sprite.rotate() # type: ignore
@@ -610,10 +633,6 @@ while running:
     x += 1
     if x > 100:
         enemies.add(Enemies("basic", 8, 280)) # type: ignore
-        #x = 0
-
-    #print(len(enemies))
-
+        
     pygame.display.flip()
     clock.tick(60)
-    #print(clock.get_fps())

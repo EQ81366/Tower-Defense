@@ -1,3 +1,5 @@
+from enum import Enum
+
 def stat_constants():
     money = 100
     hp = 100
@@ -26,6 +28,14 @@ def tower_constants() -> list[list[str|int]]:
     return [
         basic
     ]    
+
+class TargetingStates(Enum):
+    Default = 0
+    Efficiency = 1
+    Closest = 2
+    First = 3
+    Last = 4
+    Strong = 5
 
 from image_loader import load_images
 
