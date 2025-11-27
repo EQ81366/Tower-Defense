@@ -4,7 +4,7 @@ from pathlib import Path
 
 # finds the image paths
 def image_paths(type : str):
-    image_folder = Path(f"main/{type}_images")
+    image_folder = Path(f"assets/{type}_images")
     images = list(image_folder.glob("*.png"))
     return images
 
