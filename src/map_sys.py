@@ -3,7 +3,7 @@ import pygame
 # the map system
 def map(map : str):
     # loads the map based off of selected map
-    path = pygame.image.load("main/assets/map_images/"+map+".png")
+    path = pygame.image.load("assets/map_images/"+map+".png")
     # defines movement_nodes so it doesn't break if given an invalid map name
     movement_nodes = []
     map_offsets = ()

@@ -149,7 +149,7 @@ class Towers(pygame.sprite.Sprite):
         self.r_speed = int(info[4])
 
         # makes the physical circle of range
-        self.range_circle = pygame.image.load("main/assets/circle.png")
+        self.range_circle = pygame.image.load("assets/circle.png")
         self.range_circle = pygame.transform.scale(self.range_circle, (self.range*2, self.range*2))
 
         # targeting mode(default is rotationaly efficient)
@@ -355,7 +355,7 @@ class Tower_Projectiles(pygame.sprite.Sprite):
 
         # checks which projectile was spawned
         if projectile == "basic":
-            self.image = pygame.image.load("main/assets/b_bullet.png")
+            self.image = pygame.image.load("assets/b_bullet.png")
             self.speed = 300
             # think of pierce as bullet hp
             self.pierce = 1
