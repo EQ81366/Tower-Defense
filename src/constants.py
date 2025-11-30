@@ -1,3 +1,5 @@
+from enum import Enum
+
 def stat_constants():
     money = 100
     hp = 100
@@ -20,13 +22,16 @@ def enemy_constants() -> list[list[str|int|float]]:
 
 def tower_constants() -> list[list[str|int]]:
     # [A, B, C, D, E, F]
-    # replace A with type, B with dmg, C with cd, D with range, E with rotation speed, F with cost
-    basic : list[str|int] = ["basic", 1, 60, 400, 100, 100]
+    # replace A with type, B with tier, C with dmg, D with cd, E with range, F with rotation speed, G with cost
+    basic : list[str|int] = ["basic", 1, 1, 60, 400, 100, 100]
 
     return [
         basic
     ]    
 
-from image_loader import load_images
-
-load_images()
+class TargetingStates(Enum):
+    EFFICIENT = 0
+    CLOSE = 1
+    FIRST = 2
+    LAST = 3
+    STRONG = 4

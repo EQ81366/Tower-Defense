@@ -24,6 +24,7 @@ class ShopType(Enum):
 # enum of all upgrades
 class UpgradeType(Enum):
     UPGRADEUI = 0
+    BASICUPGRADES = 1
 
 # loads all game images
 def load_images():
@@ -43,7 +44,7 @@ def load_images():
         temp_tower_list : list[pygame.Surface] = []
         loop -= 1
         # loads all 3 images for a certain tower
-        for i in range(3):
+        for i in range(3): # type: ignore
             temp_tower_list += [pygame.image.load(tower_image_paths[enum.value+loop])]
             loop += 1
         

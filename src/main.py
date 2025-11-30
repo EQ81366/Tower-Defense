@@ -1,16 +1,23 @@
 import pygame, constants, math
 
+from enum import Enum
 from tower_aiming import point_enemy
 from map_sys import map
 from image_loader import load_images, EnemyType, TowerType, ShopType, UpgradeType
 
 # TO-DO LIST
-# 1. make various ui stuff
+# 1. add tower upgrading
 # 1. add more towers/enemies
 # 2. make bosses
 #
 # I'll add more as I go on
 
+
+# tower upgrading ideas:
+# 1. rpg like system; gain points, upgrade different stats
+# 2. system like btd6
+# 3. branching tree system(pros: lots of variability, cons: a LOT of upgrades to make)
+# 4. place tier 1 towers and unlock it's upgrades based on it's tier; tier 1: tier 1 upgrades, tier 2: tier 2 upgrades, etc. you upgrade the tower by merging towers of the same type together
 
 
 # initiates pygame
@@ -143,18 +150,18 @@ class Towers(pygame.sprite.Sprite):
         # firing turret image
         self.f_image = tower_image_bundle[2]
 
-        self.dmg = int(info[1])
-        self.cd = int(info[2])
-        self.range = int(info[3])
-        self.r_speed = int(info[4])
+        self.dmg = int(info[2])
+        self.cd = int(info[3])
+        self.range = int(info[4])
+        self.r_speed = int(info[5])
 
         # makes the physical circle of range
         self.range_circle = pygame.image.load("assets/circle.png")
         self.range_circle = pygame.transform.scale(self.range_circle, (self.range*2, self.range*2))
 
         # targeting mode(default is rotationaly efficient)
-        self.targeting_mode = "default"
-        self.targeting_mode = "first"
+        self.targeting_mode = constants.TargetingStates.EFFICIENT
+        self.targeting_mode = constants.TargetingStates.STRONG
 
         # makes sure there is no firing cooldown on placement
         self.wait = self.cd
@@ -222,24 +229,8 @@ class Towers(pygame.sprite.Sprite):
             x = 0
             closest_id = 0
 
-            # targets closest enemy
-            if self.targeting_mode == "closest":
-                distance = 99999
-                closest_distance = distance
-                
-                for sprite in enemies: # type: ignore
-                    dx : int = int(sprite.rect.centerx) - self.rect.centerx # type: ignore
-                    dy : int = int(sprite.rect.centery) - self.rect.centery # type: ignore
-                    distance = math.hypot(dx, dy)
-
-                    x += 1
-
-                    if distance < closest_distance and distance <= self.range:
-                        closest_distance = distance
-                        closest_id = x
-
             # targets the most "efficient" enemy; whichever enemy is fastest to shoot
-            elif self.targeting_mode == "efficiency" or self.targeting_mode == "default":
+            if self.targeting_mode == constants.TargetingStates.EFFICIENT:
                 dr = 99999
                 lowest_dr = dr
                 for sprite in enemies: # type: ignore
@@ -256,8 +247,24 @@ class Towers(pygame.sprite.Sprite):
                         lowest_dr = dr
                         closest_id = x
 
+            # targets closest enemy
+            elif self.targeting_mode == constants.TargetingStates.CLOSE:
+                distance = 99999
+                closest_distance = distance
+                
+                for sprite in enemies: # type: ignore
+                    dx : int = int(sprite.rect.centerx) - self.rect.centerx # type: ignore
+                    dy : int = int(sprite.rect.centery) - self.rect.centery # type: ignore
+                    distance = math.hypot(dx, dy)
+
+                    x += 1
+
+                    if distance < closest_distance and distance <= self.range:
+                        closest_distance = distance
+                        closest_id = x
+
             # targets the furthest most enemy in range
-            elif self.targeting_mode == "first":
+            elif self.targeting_mode == constants.TargetingStates.FIRST:
                 for sprite in enemies: # type: ignore
                     dx : int = int(sprite.rect.centerx) - self.rect.centerx # type: ignore
                     dy : int = int(sprite.rect.centery) - self.rect.centery # type: ignore
@@ -269,12 +276,9 @@ class Towers(pygame.sprite.Sprite):
                     if distance <= self.range:
                         closest_id = x
                         break
-                
-                #if len(enemies) > 0: # type: ignore
-                #    closest_id = x
 
             # targets the furthest back enemy in range
-            elif self.targeting_mode == "last":
+            elif self.targeting_mode == constants.TargetingStates.LAST:
                 for sprite in enemies: # type: ignore
                     dx : int = int(sprite.rect.centerx) - self.rect.centerx # type: ignore
                     dy : int = int(sprite.rect.centery) - self.rect.centery # type: ignore
@@ -285,10 +289,8 @@ class Towers(pygame.sprite.Sprite):
                     if distance <= self.range:
                         closest_id = x
 
-                #closest_id = len(enemies) # type: ignore
-
             # targets the enemy with the most hp
-            elif self.targeting_mode == "strong":
+            elif self.targeting_mode == constants.TargetingStates.STRONG:
                 e_hp = 0
                 highest_e_hp = e_hp
                 for sprite in enemies: # type: ignore
@@ -336,7 +338,8 @@ class Towers(pygame.sprite.Sprite):
     
     def show_range(self):
         if self.upgrades_open:
-            screen.blit(self.range_circle, (self.x-self.range_circle.get_width()/2, self.y-self.range_circle.get_height()/2))
+            return self.range_circle, (self.x-self.range_circle.get_width()/2, self.y-self.range_circle.get_height()/2)
+        return None
 
 
 
@@ -408,16 +411,16 @@ class Shop(pygame.sprite.Sprite):
             self.image = tower_images[TowerType[shop.upper()]][0] # loads a tower base image
 
             tower_stats = constants.tower_constants()[tower_type_number]
-            self.cost = int(tower_stats[4])
+            self.cost = int(tower_stats[6])
 
             self.text = shop_font.render(f'{shop.capitalize()} ${self.cost}', True, "black")
 
             self.description = [
                 tower_stat_font.render(f'{self.shop.capitalize()}:', True, "black"),
-                tower_stat_font.render(f'Damage: {tower_stats[1]}', True, "black"),
-                tower_stat_font.render(f'Cooldown: {tower_stats[2]}', True, "black"),
-                tower_stat_font.render(f'Range: {tower_stats[3]}', True, "black"),
-                tower_stat_font.render(f'R-Speed:  {tower_stats[4]}', True, "black")
+                tower_stat_font.render(f'Damage: {tower_stats[2]}', True, "black"),
+                tower_stat_font.render(f'Cooldown: {tower_stats[3]}', True, "black"),
+                tower_stat_font.render(f'Range: {tower_stats[4]}', True, "black"),
+                tower_stat_font.render(f'R-Speed:  {tower_stats[5]}', True, "black")
             ]
 
             self.clicked = False
@@ -514,7 +517,38 @@ class Upgrades(pygame.sprite.Sprite):
         
         self.image = upgrade_images[UpgradeType[upgrade.upper()]]
 
-        self.rect = self.image.get_rect(center=(x, y))        
+        self.rect = self.image.get_rect(center=(x, y))      
+
+    def hovering(self, open : bool, right_side : bool):
+        if open:
+            if right_side:
+                self.rect.centerx = self.x
+            else:
+                self.rect.centerx = (self.x-640)*-1+640
+
+            self.open = True
+            screen.blit(self.image, self.rect)
+        else:
+            self.open = False
+        
+        return self.open
+    
+    def show_tower(self, open : bool, tower : str, right_side : bool):
+        if open:
+            if right_side:
+                self.rect.centerx = self.x
+            else:
+                self.rect.centerx = (self.x-640)*-1+640
+            
+            screen.blit(tower_images[TowerType[tower.upper()]][0], (self.rect.x-(tower_images[TowerType[tower.upper()]][0].get_width()-self.rect.width)/2, 80))
+            screen.blit(tower_images[TowerType[tower.upper()]][1], (self.rect.x-(tower_images[TowerType[tower.upper()]][1].get_width()-self.rect.width)/2, 80-tower_images[TowerType[tower.upper()]][1].get_height()/2))
+            text = stat_font.render(tower.capitalize(), True, "black")
+            screen.blit(text, (self.rect.x-(text.get_width()-self.rect.width)/2, 160))
+            text = shop_font.render(f'Tier: {constants.tower_constants()[TowerType[tower.upper()].value][1]}', True, "black")
+            screen.blit(text, (self.rect.x-(text.get_width()-self.rect.width)/2, 193))
+            screen.blit(self.image, (self.rect.x-50, self.rect.y))
+            screen.blit(self.image, (self.rect.x+50, self.rect.y))
+            pygame.draw.rect(screen, "red", (self.rect.centerx, 100, 5, 5))
 
 
     
@@ -547,6 +581,7 @@ shop.add(Shop("towerui", 0, 0)) # type: ignore
 
 upgrades = pygame.sprite.Group() # type: ignore
 upgrades.add(Upgrades("upgradeui", 1180, 360)) # type: ignore
+upgrades.add(Upgrades("basicupgrades", 1160, 360)) # type: ignore
  
 # and so begins the main script
 x = 0
@@ -566,14 +601,27 @@ while running:
         sprite.move() # type: ignore
 
     # cycles through all the necessary commands for the towers group
+    open_list = []
+    range_circle = None
+    tower_selected = None
+    right_side = True
     for sprite in towers: # type: ignore
         sprite.wait += 1 # type: ignore
         sprite.find_closest_enemy() # type: ignore
         #sprite.shoot()
         sprite.unfire() # type: ignore
         sprite.rotate() # type: ignore
-        open = sprite.open_upgrades() # type: ignore
-        sprite.show_range() # type: ignore
+        open_list += [sprite.open_upgrades()] # type: ignore
+        range_circle_test = sprite.show_range() # type: ignore
+        if range_circle_test != None:
+            range_circle = range_circle_test # type: ignore
+            tower_selected = sprite.tower # type: ignore
+
+            if sprite.x > 640: # type: ignore
+                right_side = False
+
+    if range_circle != None:
+        screen.blit(range_circle[0], range_circle[1]) # type: ignore
 
     # cycles through all the necessary commands for the enemies group
     for sprite in enemies: # type: ignore
@@ -581,6 +629,17 @@ while running:
 
     # draws the enemies on the screen
     enemies.draw(screen)
+
+    open = False
+    if True in open_list:
+        open = True
+
+    # cycles through all the necessary commands for the upgrades group
+    for sprite in upgrades: # type: ignore
+        if sprite.upgrade == "upgradeui": # type: ignore
+            sprite.hovering(open, right_side) # type: ignore
+        else:
+            sprite.show_tower(open, tower_selected, right_side) # type: ignore
 
     # cycles through all the necessary commands for the shop group
     hovering_on_tower = False
@@ -603,14 +662,12 @@ while running:
         else:
             sprite.show_stats(open, hovering_on_tower, tower_stats) # type: ignore
 
-    upgrades.draw(screen)
-
     stats(money, hp)
 
     x += 1
     if x > 100:
         enemies.add(Enemies("basic", 8, 280)) # type: ignore
-        #x = 0
+        x = 0
 
     #print(len(enemies))
 
