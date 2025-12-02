@@ -64,6 +64,8 @@ def load_images():
     for enum in UpgradeType:
         upgrade_list[enum] = pygame.image.load(upgrade_image_paths[enum.value])
 
+    print(upgrade_list)
+
     return enemy_list, tower_list, shop_list, upgrade_list
 
 

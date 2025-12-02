@@ -10,9 +10,9 @@ def stat_constants():
     ]
 
 def enemy_constants() -> list[list[str|int|float]]:
-    # [A, B, C, D]
-    # replace A with type, B with tier, C with speed, D with hp
-    basic : list[str|int|float] = ["basic", 1, 1.0, 1]
+    # [A, B, C, D, (E)]
+    # replace A with type, B with tier, C with speed, D with hp, (E with custom money drop)
+    basic : list[str|int|float] = ["basic", 1, 3.0, 1]
     tank : list[str|int|float] = ["tank", 1, 0.5, 100]
 
     return [
@@ -27,7 +27,7 @@ def tower_constants() -> list[list[str|int]]:
 
     return [
         basic
-    ]    
+    ]
 
 class TargetingStates(Enum):
     EFFICIENT = 0

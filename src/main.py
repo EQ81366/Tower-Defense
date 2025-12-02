@@ -4,6 +4,7 @@ from enum import Enum
 from tower_aiming import point_enemy
 from map_sys import map
 from image_loader import load_images, EnemyType, TowerType, ShopType, UpgradeType
+from upgrade_loader import load_upgrades, UpgradeList
 
 # TO-DO LIST
 # 1. add tower upgrading
@@ -34,7 +35,8 @@ running = True
 
 # loads all game images
 enemy_images, tower_images, shop_images, upgrade_images = load_images()
-print(shop_images)
+upgrade_text = load_upgrades()
+print(upgrade_text)
 
 
 tower_stat_font = pygame.font.SysFont('Arial', 16)
@@ -65,10 +67,16 @@ class Enemies(pygame.sprite.Sprite):
 
         self.image = enemy_images[EnemyType[enemy.upper()]]
 
-        self.tier = str(info[1])
+        self.tier = int(info[1])
         self.speed = float(info[2])
         self.hp = int(info[3])
         self.max_hp = self.hp
+
+        self.money_drop = round(4**self.tier)
+
+        # allows for custom money drops
+        if len(info) > 4:
+            self.money_drop = int(info[4])
 
         self.rect = self.image.get_rect(center=(x, y))
         # sets the current destination number(refer to the map system above)
@@ -113,13 +121,14 @@ class Enemies(pygame.sprite.Sprite):
         elif len(movement_nodes) == self.current_node:
             self.kill()
             # returns the amount of damage to deal
-            return self.tier
+            return 
         
-    def damage(self, damage : float):
+    def damage(self, damage : float) -> list[int]:
         self.hp -= damage
         if not self.hp > 0:
             self.kill()
-
+            return [self.tier, self.money_drop]
+        return [0, 0]
 
 # defines the class Towers
 class Towers(pygame.sprite.Sprite):
@@ -150,10 +159,16 @@ class Towers(pygame.sprite.Sprite):
         # firing turret image
         self.f_image = tower_image_bundle[2]
 
+        # tower info
+        self.tier = int(info[1])
         self.dmg = int(info[2])
         self.cd = int(info[3])
         self.range = int(info[4])
         self.r_speed = int(info[5])
+
+        # amount of each enemy tier killed
+        # first number enemy tier, second number amount
+        enemies_killed : dict[int, int] = {1:0, 2:0, 3:0, 4:0, 5:0}
 
         # makes the physical circle of range
         self.range_circle = pygame.image.load("assets/circle.png")
@@ -223,8 +238,8 @@ class Towers(pygame.sprite.Sprite):
             self.firing = False
 
     # finds the closest enemy
-    def find_closest_enemy(self):
-        # high default distance so as to not interfere with anythin
+    def find_closest_enemy(self) -> list[int]:
+        enemy_death_info : list[int] = [0, 0]
         if self.wait > self.cd/5 or self.wait == 0:
             x = 0
             closest_id = 0
@@ -314,10 +329,12 @@ class Towers(pygame.sprite.Sprite):
                 # checks if firing cooldown is over and that the tower is rotated within 4 degrees of the enemy
                 if self.wait >= self.cd and self.current_angle >= self.rotation_angle-2 and self.current_angle <= self.rotation_angle+2:
                     # kills the targeted enemy
-                    enemy_list[closest_id-1].damage(self.dmg) # type: ignore
+                    enemy_death_info : list[int] = enemy_list[closest_id-1].damage(self.dmg) # type: ignore
                     self.shoot_enemy = False
                     self.firing = True
                     self.wait = 0
+
+        return enemy_death_info # type: ignore
 
     def open_upgrades(self):
         self.mouse_down = pygame.mouse.get_pressed()[0]
@@ -533,21 +550,38 @@ class Upgrades(pygame.sprite.Sprite):
         
         return self.open
     
-    def show_tower(self, open : bool, tower : str, right_side : bool):
+    def show_tower(self, open : bool, tower : str, tower_tier : int, right_side : bool):
         if open:
             if right_side:
                 self.rect.centerx = self.x
             else:
                 self.rect.centerx = (self.x-640)*-1+640
             
-            screen.blit(tower_images[TowerType[tower.upper()]][0], (self.rect.x-(tower_images[TowerType[tower.upper()]][0].get_width()-self.rect.width)/2, 80))
-            screen.blit(tower_images[TowerType[tower.upper()]][1], (self.rect.x-(tower_images[TowerType[tower.upper()]][1].get_width()-self.rect.width)/2, 80-tower_images[TowerType[tower.upper()]][1].get_height()/2))
+            # shows the tower selected in upgrade menu
+            images = tower_images[TowerType[tower.upper()]]
+            screen.blit(images[0], (self.rect.x-(images[0].get_width()-self.rect.width)/2, 80))
+            screen.blit(images[1], (self.rect.x-(images[1].get_width()-self.rect.width)/2, 80-images[1].get_height()/2))
+
+            # shows the selected tower's name and tier
             text = stat_font.render(tower.capitalize(), True, "black")
             screen.blit(text, (self.rect.x-(text.get_width()-self.rect.width)/2, 160))
-            text = shop_font.render(f'Tier: {constants.tower_constants()[TowerType[tower.upper()].value][1]}', True, "black")
+            text = shop_font.render(f'Tier: {tower_tier}', True, "black")
             screen.blit(text, (self.rect.x-(text.get_width()-self.rect.width)/2, 193))
-            screen.blit(self.image, (self.rect.x-50, self.rect.y))
-            screen.blit(self.image, (self.rect.x+50, self.rect.y))
+
+            # upgrades
+            #50
+            screen.blit(self.image, (self.rect.x, self.rect.y))
+            screen.blit(self.image, (self.rect.x, self.rect.y+80))
+
+            images = upgrade_text[UpgradeList[tower.upper()]]
+
+            for i in range(len(images)):
+                screen.blit(images[tower_tier*2-2][i], (self.rect.x+7, self.rect.y+8+25*i))
+                screen.blit(images[tower_tier*2-1][i], (self.rect.x+7, self.rect.y+88+25*i))
+
+            print()
+
+            # testing
             pygame.draw.rect(screen, "red", (self.rect.centerx, 100, 5, 5))
 
 
@@ -605,9 +639,10 @@ while running:
     range_circle = None
     tower_selected = None
     right_side = True
+    tower_tier = 0
     for sprite in towers: # type: ignore
         sprite.wait += 1 # type: ignore
-        sprite.find_closest_enemy() # type: ignore
+        money += int(sprite.find_closest_enemy()[1]) # type: ignore
         #sprite.shoot()
         sprite.unfire() # type: ignore
         sprite.rotate() # type: ignore
@@ -616,6 +651,7 @@ while running:
         if range_circle_test != None:
             range_circle = range_circle_test # type: ignore
             tower_selected = sprite.tower # type: ignore
+            tower_tier = sprite.tier #type: ignore
 
             if sprite.x > 640: # type: ignore
                 right_side = False
@@ -639,7 +675,7 @@ while running:
         if sprite.upgrade == "upgradeui": # type: ignore
             sprite.hovering(open, right_side) # type: ignore
         else:
-            sprite.show_tower(open, tower_selected, right_side) # type: ignore
+            sprite.show_tower(open, tower_selected, tower_tier, right_side) # type: ignore
 
     # cycles through all the necessary commands for the shop group
     hovering_on_tower = False
