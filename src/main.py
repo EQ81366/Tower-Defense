@@ -36,9 +36,8 @@ running = True
 # loads all game images
 enemy_images, tower_images, shop_images, upgrade_images = load_images()
 upgrade_text = load_upgrades()
-print(upgrade_text)
 
-
+# fonts
 tower_stat_font = pygame.font.SysFont('Arial', 16)
 shop_font = pygame.font.SysFont('Arial', 25)
 stat_font = pygame.font.SysFont('Arial', 30)
@@ -47,6 +46,7 @@ stat_font = pygame.font.SysFont('Arial', 30)
 placing_tower = False
 money, hp = constants.stat_constants()
 
+# loads map info
 path, movement_nodes, map_offsets = map("path1")
 
 
@@ -121,7 +121,7 @@ class Enemies(pygame.sprite.Sprite):
         elif len(movement_nodes) == self.current_node:
             self.kill()
             # returns the amount of damage to deal
-            return 
+            return (2**self.tier)/2
         
     def damage(self, damage : float) -> list[int]:
         self.hp -= damage
@@ -166,9 +166,12 @@ class Towers(pygame.sprite.Sprite):
         self.range = int(info[4])
         self.r_speed = int(info[5])
 
+        # list of upgrades(bought and non-bought)
+        self.upgrades_bought = {1:[False, False], 2:[False, False]}
+
         # amount of each enemy tier killed
         # first number enemy tier, second number amount
-        enemies_killed : dict[int, int] = {1:0, 2:0, 3:0, 4:0, 5:0}
+        self.enemies_killed : dict[int, int] = {1:0, 2:0, 3:0, 4:0, 5:0}
 
         # makes the physical circle of range
         self.range_circle = pygame.image.load("assets/circle.png")
@@ -230,7 +233,6 @@ class Towers(pygame.sprite.Sprite):
             self.shoot_enemy = True
             self.firing = True
             self.wait = 0
-            print("hi")
 
     # determines when to switch back to the original tower state
     def unfire(self):
@@ -284,7 +286,6 @@ class Towers(pygame.sprite.Sprite):
                     dx : int = int(sprite.rect.centerx) - self.rect.centerx # type: ignore
                     dy : int = int(sprite.rect.centery) - self.rect.centery # type: ignore
                     distance = math.hypot(dx, dy)
-                    #print(distance)
 
                     x += 1
 
@@ -336,18 +337,17 @@ class Towers(pygame.sprite.Sprite):
 
         return enemy_death_info # type: ignore
 
-    def open_upgrades(self):
-        self.mouse_down = pygame.mouse.get_pressed()[0]
+    def open_upgrades(self, upgrade_rect : pygame.Rect):
         if self.rect.collidepoint(mouse_xy):
-            if self.mouse_down:
+            if mouse_down:
                 self.clicked = True
-            elif not self.mouse_down and self.clicked:
+            elif not mouse_down and self.clicked:
                 self.clicked = False
                 self.upgrades_open = not self.upgrades_open
         else:
-            if self.mouse_down:
+            if mouse_down and not upgrade_rect.collidepoint(mouse_xy):
                 self.clicked = True
-            elif not self.mouse_down and self.clicked:
+            elif not mouse_down and self.clicked:
                 self.clicked = False
                 self.upgrades_open = False
             
@@ -472,9 +472,9 @@ class Shop(pygame.sprite.Sprite):
                 # hovering_on_tower used to determine whether to show tower stats
                 hovering_on_tower = True
                 if money >= self.cost:
-                    if pygame.mouse.get_pressed()[0] and not self.clicked:
+                    if mouse_down and not self.clicked:
                         self.clicked = True
-                    elif not pygame.mouse.get_pressed()[0] and self.clicked:
+                    elif not mouse_down and self.clicked:
                         self.clicked = False
                         return True, hovering_on_tower, self.cost, self.description
             else:
@@ -500,9 +500,9 @@ class Shop(pygame.sprite.Sprite):
         colliding = mask1.overlap(mask2, (offset_x, offset_y))
         
         # waits to place tower until mouse down and not touching track, it then waits for mouse release to place
-        if pygame.mouse.get_pressed()[0] and not colliding:
+        if mouse_down and not colliding:
             self.clicked = True
-        elif not pygame.mouse.get_pressed()[0] and self.clicked:
+        elif not mouse_down and self.clicked:
             self.clicked = False
             towers.add(Towers(self.shop, self.rect.centerx, self.rect.centery)) # type: ignore
             self.rect.centerx = self.original_x
@@ -531,6 +531,8 @@ class Upgrades(pygame.sprite.Sprite):
         self.y = y
 
         upgrade_type_number = UpgradeType[upgrade.upper()].value # type: ignore
+
+        self.clicked = False
         
         self.image = upgrade_images[UpgradeType[upgrade.upper()]]
 
@@ -538,6 +540,7 @@ class Upgrades(pygame.sprite.Sprite):
 
     def hovering(self, open : bool, right_side : bool):
         if open:
+            # makes the upgrades open on the opposite side of the selected tower
             if right_side:
                 self.rect.centerx = self.x
             else:
@@ -550,8 +553,10 @@ class Upgrades(pygame.sprite.Sprite):
         
         return self.open
     
-    def show_tower(self, open : bool, tower : str, tower_tier : int, right_side : bool):
+    def upgrades(self, open : bool, tower : str, tower_tier : int, right_side : bool, upgraded : list[bool]) -> list[int|str|float]:
+        upgrade_info_placeholder : list[int|str|float] = [0, "", 0.0]
         if open:
+            # makes the upgrades open on the opposite side of the selected tower
             if right_side:
                 self.rect.centerx = self.x
             else:
@@ -569,20 +574,31 @@ class Upgrades(pygame.sprite.Sprite):
             screen.blit(text, (self.rect.x-(text.get_width()-self.rect.width)/2, 193))
 
             # upgrades
-            #50
             screen.blit(self.image, (self.rect.x, self.rect.y))
             screen.blit(self.image, (self.rect.x, self.rect.y+80))
 
-            images = upgrade_text[UpgradeList[tower.upper()]]
+            text_info, upgrade_info = upgrade_text[UpgradeList[tower.upper()]]
+            
+            for i in range(len(text_info)):
+                screen.blit(text_info[tower_tier*2-2][i], (self.rect.x+7, self.rect.y+8+25*i)) # type: ignore            
+                screen.blit(text_info[tower_tier*2-1][i], (self.rect.x+7, self.rect.y+88+25*i)) # type: ignore
 
-            for i in range(len(images)):
-                screen.blit(images[tower_tier*2-2][i], (self.rect.x+7, self.rect.y+8+25*i))
-                screen.blit(images[tower_tier*2-1][i], (self.rect.x+7, self.rect.y+88+25*i))
-
-            print()
+            if self.rect.collidepoint(mouse_xy) and mouse_down and money >= int(upgrade_info[tower_tier*2-2][0]) and not upgraded[0]:
+                self.clicked = True
+            elif self.rect.collidepoint(mouse_xy) and not mouse_down and self.clicked:
+                self.clicked = False
+                return upgrade_info[tower_tier*2-2]
+            
+            if pygame.Rect(self.rect.x, self.rect.y+80, self.rect.width, self.rect.height).collidepoint(mouse_xy) and mouse_down and money >= int(upgrade_info[tower_tier*2-1][0]) and not upgraded[1]:
+                self.clicked = True
+            elif pygame.Rect(self.rect.x, self.rect.y+80, self.rect.width, self.rect.height).collidepoint(mouse_xy) and not mouse_down and self.clicked:
+                self.clicked = False
+                return upgrade_info[tower_tier*2-1]
 
             # testing
             pygame.draw.rect(screen, "red", (self.rect.centerx, 100, 5, 5))
+    
+        return upgrade_info_placeholder
 
 
     
@@ -619,6 +635,9 @@ upgrades.add(Upgrades("basicupgrades", 1160, 360)) # type: ignore
  
 # and so begins the main script
 x = 0
+upgrade_info : list[int|str|float] = [0, "", 0.0]
+upgrading : str = ""
+upgrade_rect = pygame.Rect(0, 0, 0, 0)
 while running:
     for event in pygame.event.get():
         if event.type == pygame.QUIT:
@@ -630,12 +649,13 @@ while running:
     screen.blit(path, (-4, 200))
 
     mouse_xy = pygame.mouse.get_pos()
+    mouse_down = pygame.mouse.get_pressed()[0]
 
     for sprite in tower_projectiles: # type: ignore
         sprite.move() # type: ignore
 
     # cycles through all the necessary commands for the towers group
-    open_list = []
+    open_list : list[bool] = []
     range_circle = None
     tower_selected = None
     right_side = True
@@ -646,7 +666,7 @@ while running:
         #sprite.shoot()
         sprite.unfire() # type: ignore
         sprite.rotate() # type: ignore
-        open_list += [sprite.open_upgrades()] # type: ignore
+        open_list += [sprite.open_upgrades(upgrade_rect)] # type: ignore
         range_circle_test = sprite.show_range() # type: ignore
         if range_circle_test != None:
             range_circle = range_circle_test # type: ignore
@@ -655,6 +675,8 @@ while running:
 
             if sprite.x > 640: # type: ignore
                 right_side = False
+
+    tower_group = towers.sprites() # type: ignore
 
     if range_circle != None:
         screen.blit(range_circle[0], range_circle[1]) # type: ignore
@@ -667,15 +689,38 @@ while running:
     enemies.draw(screen)
 
     open = False
+    #print(open_list)
     if True in open_list:
         open = True
 
     # cycles through all the necessary commands for the upgrades group
+    upgrade_info = [0, "", 0.0]
     for sprite in upgrades: # type: ignore
         if sprite.upgrade == "upgradeui": # type: ignore
             sprite.hovering(open, right_side) # type: ignore
+            upgrade_rect = sprite.rect # type: ignore
         else:
-            sprite.show_tower(open, tower_selected, tower_tier, right_side) # type: ignore
+            if open_list.count(True) > 0:
+                upgrade_info = sprite.upgrades(open, tower_selected, tower_tier, right_side, tower_group[open_list.index(True)].upgrades_bought[tower_group[open_list.index(True)].tier]) # type: ignore
+            else:
+                upgrade_info = sprite.upgrades(open, tower_selected, tower_tier, right_side, [False, False]) # type: ignore
+
+    # the stat being upgraded
+    upgrading = upgrade_info[1]
+
+    if open_list.count(True) > 0 and upgrading != "":
+        # subtracts the cost of the money from your money
+        upgrade_cost : int = int(upgrade_info[0])
+        money -= upgrade_cost
+
+        current_stat = getattr(tower_group[open_list.index(True)], upgrading) # type: ignore
+        setattr(tower_group[open_list.index(True)], upgrading, current_stat*upgrade_info[2]) # type: ignore
+        if str(upgrade_info[3]).find(".1") != -1:
+            tower_group[open_list.index(True)].upgrades_bought[1][0] = True # type: ignore
+        elif str(upgrade_info[3]).find(".2") != -1:
+            tower_group[open_list.index(True)].upgrades_bought[1][1] = True # type: ignore
+
+        print(tower_group[open_list.index(True)].upgrades_bought[tower_group[open_list.index(True)].tier]) # type: ignore
 
     # cycles through all the necessary commands for the shop group
     hovering_on_tower = False
@@ -703,9 +748,7 @@ while running:
     x += 1
     if x > 100:
         enemies.add(Enemies("basic", 8, 280)) # type: ignore
-        x = 0
-
-    #print(len(enemies))
+        #x = 0
 
     pygame.display.flip()
     clock.tick(60)

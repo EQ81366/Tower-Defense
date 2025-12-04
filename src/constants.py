@@ -1,7 +1,7 @@
 from enum import Enum
 
 def stat_constants():
-    money = 100
+    money = 10000000000000000
     hp = 100
 
     return [
@@ -12,7 +12,7 @@ def stat_constants():
 def enemy_constants() -> list[list[str|int|float]]:
     # [A, B, C, D, (E)]
     # replace A with type, B with tier, C with speed, D with hp, (E with custom money drop)
-    basic : list[str|int|float] = ["basic", 1, 3.0, 1]
+    basic : list[str|int|float] = ["basic", 1, 1.0, 1]
     tank : list[str|int|float] = ["tank", 1, 0.5, 100]
 
     return [
