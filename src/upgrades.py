@@ -1,5 +1,4 @@
 import pygame
-from enum import Enum
 
 pygame.font.init()
 

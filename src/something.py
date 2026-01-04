@@ -4,11 +4,13 @@ pygame.init()
 running = True
 
 screen = pygame.display.set_mode((1280, 720))
+image = pygame.image.load("assets/enemy_images/1_basic_enemy.png")
+#image = pygame.image.load("assets/enemy_images/b_bullet.png")
 
-o_image = pygame.image.load("enemy_images/enemy1.png")
-pixel_array = pygame.PixelArray(o_image)
-pixel_array.replace((0, 0, 0), (255, 0, 0))
-del pixel_array
+damage_image = image.copy()
+with pygame.PixelArray(damage_image) as pixel_array:
+    pixel_array.replace(image.get_at((int(image.get_width()/2), int(image.get_height()/2))), (255, 0, 0))
+
 
 while running:
     for event in pygame.event.get():
@@ -16,5 +18,6 @@ while running:
             running = False
 
     screen.fill("white")
-    screen.blit(o_image, (640, 360))
+    screen.blit(image, (640, 360))
+    screen.blit(damage_image, (640, 360))
     pygame.display.flip()

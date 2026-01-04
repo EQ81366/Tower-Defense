@@ -1,10 +1,10 @@
-import pygame, constants, math
+import pygame, constants, math, map_sys
 
-from enum import Enum
-from tower_aiming import point_enemy
-from map_sys import map
-from image_loader import load_images, EnemyType, TowerType, ImagesPerTower, ShopType, UpgradeType
-from upgrade_loader import load_upgrades, UpgradeList
+from image_loader import load_images
+from enemy import Enemies, enemies # type: ignore
+from tower import Towers, towers # type: ignore
+from shop import Shop
+from upgrade import Upgrades
 
 # TO-DO LIST
 # 1. add more towers/enemies
@@ -34,7 +34,6 @@ running = True
 
 # loads all game images
 enemy_images, tower_images, shop_images, upgrade_images = load_images()
-upgrade_text = load_upgrades()
 
 # fonts
 tower_stat_font = pygame.font.SysFont('Arial', 16)
@@ -46,356 +45,8 @@ placing_tower = False
 money, hp = constants.stat_constants()
 
 # loads map info
-path, movement_nodes, map_offsets = map("path1")
-
-
-
-class Enemies(pygame.sprite.Sprite):
-    def __init__(self, enemy : str, x : int, y : int):
-        super().__init__()
-
-        self.enemy = enemy
-
-        self.x = float(x)
-        self.y = float(y)
-
-        enemy_type_number = EnemyType[enemy.upper()].value
-
-        info = constants.enemy_constants()[enemy_type_number]
-
-        self.image = enemy_images[EnemyType[enemy.upper()]]
-
-        self.tier = int(info[1])
-        self.speed = float(info[2])
-        self.hp = int(info[3])
-        self.max_hp = self.hp
-
-        self.money_drop = round(4**self.tier)
-
-        # allows for custom money drops
-        if len(info) > 4:
-            self.money_drop = int(info[4])
-
-        self.rect = self.image.get_rect(center=(x, y))
-        # sets the current destination number(refer to the map system above)
-        self.current_node = 0
-
-    # script to make enemies go to map destinations
-    def pathfind(self):
-        if len(movement_nodes) != self.current_node:
-            # determines which destination in the destination list to go to
-            destination = movement_nodes[self.current_node]
-
-            # next 10 lines enact vector normalized movement
-            dx = destination[0] - self.rect.centerx
-            dy = destination[1] - self.rect.centery
-
-            magnitude = math.sqrt(dx*dx + dy*dy)
-
-            self.x += dx/magnitude * self.speed
-            self.y += dy/magnitude * self.speed
-
-            self.rect.centerx = int(self.x)
-            self.rect.centery = int(self.y)
-
-            def at_destination():
-                self.current_node += 1
-                self.rect.centerx = destination[0]
-                self.rect.centery = destination[1]
-
-            # determines if the enemy actually made it to it's destination
-            if (dx >= 0 and self.rect.centerx >= destination[0]) and (dy >= 0 and self.rect.centery >= destination[1]):
-                at_destination()
-            elif (dx >= 0 and self.rect.centerx >= destination[0]) and (dy <= 0 and self.rect.centery <= destination[1]):
-                at_destination()
-            elif (dx <= 0 and self.rect.centerx <= destination[0]) and (dy >= 0 and self.rect.centery >= destination[1]):
-                at_destination()
-            elif (dx <= 0 and self.rect.centerx <= destination[0]) and (dy <= 0 and self.rect.centery <= destination[1]):
-                at_destination()
-
-            return 0
-
-        # if enemy reaches end of map
-        elif len(movement_nodes) == self.current_node:
-            self.kill()
-            # returns the amount of damage to deal
-            return (2**self.tier)/2
-        
-    def damage(self, damage : float) -> list[int]:
-        print(self.hp)
-        self.hp -= damage
-        if not self.hp > 0:
-            self.kill()
-            print(self.hp)
-            return [self.tier, self.money_drop]
-        print(self.hp)
-        return [0, 0]
-
-# defines the class Towers
-class Towers(pygame.sprite.Sprite):
-    def __init__(self, tower : str, x : int, y : int):
-        super().__init__()
-
-        self.tower = tower
-
-        self.x = x
-        self.y = y
-
-        self.current_angle = 0
-
-        self.rotation_angle = 0
-        self.exported_angle = 0
-
-        self.firing_pose = 0
-
-        tower_image_bundle = tower_images[TowerType[tower.upper()]]
-        tower_type_number = TowerType[tower.upper()].value
-        
-        info = constants.tower_constants()[tower_type_number]
-
-        # base image
-        self.b_image = tower_image_bundle[0]
-        # turret image
-        self.image = tower_image_bundle[1]
-        # firing turret image
-        self.f_image = tower_image_bundle[2]
-
-        # tower info
-        self.tier = int(info[1])
-        self.turrets = int(info[2])
-        self.dmg = int(info[3])
-        self.cd = int(info[4])
-        self.range = int(info[5])
-        self.r_speed = int(info[6])
-
-        if self.turrets > 1:
-            self.f2_image = tower_image_bundle[3]
-
-        # list of upgrades(bought and non-bought)
-        self.upgrades_bought = {1:[False, False], 2:[False, False]}
-
-        # amount of each enemy tier killed
-        # first number enemy tier, second number amount
-        self.enemies_killed : dict[int, int] = {1:0, 2:0, 3:0, 4:0, 5:0}
-
-        # makes the physical circle of range
-        self.range_circle = pygame.image.load("assets/circle.png")
-        self.range_circle_scaled = pygame.transform.scale(self.range_circle, (self.range*2, self.range*2))
-
-        # targeting mode(default is rotationaly efficient)
-        self.targeting_mode = constants.TargetingStates.EFFICIENT
-        self.targeting_mode = constants.TargetingStates.FIRST
-
-        # makes sure there is no firing cooldown on placement
-        self.wait = self.cd
-        self.shots_left = self.turrets
-
-        # if you don't understand what this line of code means...
-        self.firing = False
-        self.shoot_enemy = False
-        self.clicked = False
-        self.upgrades_open = False
-        
-        self.rect = self.image.get_rect(center=(x, y))
-
-        self.b_rect = self.b_image.get_rect(center=(x, y))
-
-        self.height = self.image.get_height()
-    
-    # defines the rotation and firing animation of the tower
-    def rotate(self):
-        dr = self.rotation_angle - self.current_angle
-    
-        if abs(dr) > 1:
-            self.current_angle += self.r_speed/60 * dr/abs(dr)
-            dr = self.rotation_angle - self.current_angle
-            if abs(dr) <= 2*(self.r_speed/100):
-                self.current_angle = self.rotation_angle
-            if self.current_angle >= 360:
-                self.current_angle = 0
-
-        self.r_image = pygame.transform.rotate(self.image, self.current_angle)
-        self.rect = self.r_image.get_rect(center=(self.x, self.y))
-        xy = [self.rect.centerx, self.rect.centery]
-
-        # if shooting, switches image to shooting image
-        if self.firing:
-            #print(self.rotation_angle, self.current_angle)
-            if self.wait < self.cd/10 and self.turrets-1 == self.shots_left:
-                self.r_image = pygame.transform.rotate(self.f_image, self.current_angle)
-                print("TFFFFFFF")
-
-            elif self.turrets > 1 and self.wait < self.cd/5 and self.turrets-2 == self.shots_left:
-                print("HOWWWWWWWWWWWWWWWWWWW", self.rotation_angle, self.current_angle)
-                self.r_image = pygame.transform.rotate(self.f2_image, self.current_angle)
-
-            self.rect = self.r_image.get_rect(center=(xy[0], xy[1]))
-        
-        x = math.cos(math.radians(90+self.current_angle))*self.height/2
-        y = math.sin(math.radians(90+self.current_angle))*self.height/2
-
-        screen.blit(self.b_image, self.b_rect)
-        screen.blit(self.r_image, (self.rect.x+x, self.rect.y-y))
-
-    # determines whether the tower can shoot yet
-    # CURRENTLY OBSOLETE(most likely will not be added again)
-    def shoot(self):
-        self.shoot_enemy = False
-        if self.wait >= self.cd and self.current_angle >= self.rotation_angle-2 and self.current_angle <= self.rotation_angle+2:
-            #  ⌄⌄⌄⌄⌄⌄⌄⌄⌄⌄⌄⌄⌄⌄⌄⌄⌄⌄⌄⌄⌄⌄⌄⌄⌄⌄⌄⌄⌄⌄⌄⌄⌄⌄⌄⌄uncomment this for bullets⌄⌄⌄⌄⌄⌄⌄⌄⌄⌄⌄⌄⌄⌄⌄⌄⌄⌄⌄⌄⌄⌄⌄⌄⌄⌄⌄⌄⌄⌄⌄⌄⌄⌄⌄⌄⌄⌄⌄⌄⌄⌄⌄
-            #tower_projectiles.add(Tower_Projectiles("basic", self.rect.centerx, self.rect.centery, self.exported_angle))
-            self.shoot_enemy = True
-            self.firing = True
-            self.wait = 0
-
-    # determines when to switch back to the original tower state
-    def unfire(self):
-        if self.wait > self.cd/5 and self.shots_left != self.turrets-1:
-            self.firing = False
-            print("_-______________________________--")
-        #elif self.shots_left == 0:
-        #    self.firing = False
-            #print("_________--------------------------")
-        elif self.shots_left == self.turrets-1 and self.closest_id != 0 and self.wait >= self.cd/10:
-            self.shoot_target(True)
-                
-    # finds the closest enemy
-    def find_closest_enemy(self) -> list[int]:
-        enemy_death_info : list[int] = [0, 0]
-        print(self.wait, self.cd)
-        x = 0
-        self.closest_id = 0
-
-        # targets the most "efficient" enemy; whichever enemy is fastest to shoot
-        if self.targeting_mode == constants.TargetingStates.EFFICIENT:
-            dr = 99999
-            lowest_dr = dr
-            for sprite in enemies: # type: ignore
-                dx : int = int(sprite.rect.centerx) - self.rect.centerx # type: ignore
-                dy : int = int(sprite.rect.centery) - self.rect.centery # type: ignore
-                distance = math.hypot(dx, dy)
-
-                angle = point_enemy(self.rect.centerx, self.rect.centery, sprite.rect.centerx, sprite.rect.centery) # type: ignore
-                dr = angle - self.current_angle
-        
-                x += 1
-
-                if abs(dr) < abs(lowest_dr) and distance <= self.range:
-                    lowest_dr = dr
-                    self.closest_id = x
-
-        # targets closest enemy
-        elif self.targeting_mode == constants.TargetingStates.CLOSE:
-            distance = 99999
-            closest_distance = distance
-            
-            for sprite in enemies: # type: ignore
-                dx : int = int(sprite.rect.centerx) - self.rect.centerx # type: ignore
-                dy : int = int(sprite.rect.centery) - self.rect.centery # type: ignore
-                distance = math.hypot(dx, dy)
-
-                x += 1
-
-                if distance < closest_distance and distance <= self.range:
-                    closest_distance = distance
-                    self.closest_id = x
-
-        # targets the furthest most enemy in range
-        elif self.targeting_mode == constants.TargetingStates.FIRST:
-            for sprite in enemies: # type: ignore
-                dx : int = int(sprite.rect.centerx) - self.rect.centerx # type: ignore
-                dy : int = int(sprite.rect.centery) - self.rect.centery # type: ignore
-                distance = math.hypot(dx, dy)
-
-                x += 1
-
-                if distance <= self.range:
-                    self.closest_id = x
-                    break
-
-        # targets the furthest back enemy in range
-        elif self.targeting_mode == constants.TargetingStates.LAST:
-            for sprite in enemies: # type: ignore
-                dx : int = int(sprite.rect.centerx) - self.rect.centerx # type: ignore
-                dy : int = int(sprite.rect.centery) - self.rect.centery # type: ignore
-                distance = math.hypot(dx, dy)
-
-                x += 1
-
-                if distance <= self.range:
-                    self.closest_id = x
-
-        # targets the enemy with the most hp
-        elif self.targeting_mode == constants.TargetingStates.STRONG:
-            e_hp = 0
-            highest_e_hp = e_hp
-            for sprite in enemies: # type: ignore
-                dx : int = int(sprite.rect.centerx) - self.rect.centerx # type: ignore
-                dy : int = int(sprite.rect.centery) - self.rect.centery # type: ignore
-                distance = math.hypot(dx, dy)
-
-                x += 1
-                e_hp = float(sprite.max_hp) # type: ignore
-
-                if e_hp > highest_e_hp and distance <= self.range:
-                    highest_e_hp = e_hp
-                    self.closest_id = x
-
-        # makes sure there are enemies within tower range
-        if self.closest_id != 0:
-            # gets a list format of the enemies group
-            enemy_list = enemies.sprites() # type: ignore
-
-            # finds the angle to targeted enemy
-            self.rotation_angle = point_enemy(self.rect.centerx, self.rect.centery, int(enemy_list[self.closest_id-1].rect.centerx), int(enemy_list[self.closest_id-1].rect.centery)) # type: ignore
-            
-            # checks if firing cooldown is over and that the tower is rotated within 4 degrees of the enemy
-            if (self.wait >= self.cd) and self.current_angle >= self.rotation_angle-2 and self.current_angle <= self.rotation_angle+2:
-                self.shots_left = self.turrets
-                self.shoot_target(True)
-
-        return enemy_death_info # type: ignore
-    
-    def shoot_target(self, shoot : bool):
-        if shoot and self.current_angle >= self.rotation_angle-2 and self.current_angle <= self.rotation_angle+2:
-            enemy_list = enemies.sprites() # type: ignore
-            # damages the target
-            if self.closest_id != 0:
-                enemy_death_info : list[int] = enemy_list[self.closest_id-1].damage(self.dmg) # type: ignore
-
-                print("bruhhhhh")
-
-                # updates amount of enemies killed
-                if enemy_death_info != [0, 0]:
-                    self.enemies_killed[enemy_death_info[0]] += 1
-
-            self.shoot_enemy = False
-            self.firing = True
-            self.shots_left -= 1
-            self.wait = 0
-            print(self.shots_left, "----", self.closest_id)
-
-    def open_upgrades(self, upgrade_rect : pygame.Rect):
-        if self.rect.collidepoint(mouse_xy):
-            if mouse_down:
-                self.clicked = True
-            elif not mouse_down and self.clicked:
-                self.clicked = False
-                self.upgrades_open = not self.upgrades_open
-        else:
-            if mouse_down and not upgrade_rect.collidepoint(mouse_xy):
-                self.clicked = True
-            elif not mouse_down and self.clicked:
-                self.clicked = False
-                self.upgrades_open = False
-            
-        return self.upgrades_open
-    
-    def show_range(self):
-        if self.upgrades_open:
-            self.range_circle_scaled = pygame.transform.scale(self.range_circle, (self.range*2, self.range*2))
-            return self.range_circle_scaled, (self.x-self.range_circle_scaled.get_width()/2, self.y-self.range_circle_scaled.get_height()/2)
-        return None
+current_map = map_sys.select_map()
+path, movement_nodes, map_offsets = map_sys.map(current_map)
 
 
 
@@ -450,197 +101,6 @@ class Tower_Projectiles(pygame.sprite.Sprite):
             if self.rect.colliderect(sprite.rect): # type: ignore
                 sprite.kill() # type: ignore
 
-# defines the class Shop
-class Shop(pygame.sprite.Sprite):
-    def __init__(self, shop : str, x : int, y : int):
-        super().__init__()
-
-        self.shop = shop
-
-        self.original_x = x
-        self.original_y = y
-
-        # defines generic things for non-panel shop items
-        if not shop.upper() in ShopType.__members__:
-            tower_type_number = TowerType[shop.upper()].value
-
-            self.image = tower_images[TowerType[shop.upper()]][0] # loads a tower base image
-
-            tower_stats = constants.tower_constants()[tower_type_number]
-            self.cost = int(tower_stats[7])
-
-            self.text = shop_font.render(f'{shop.capitalize()} ${self.cost}', True, "black")
-
-            self.description = [
-                tower_stat_font.render(f'{self.shop.capitalize()}:', True, "black"),
-                tower_stat_font.render(f'Damage: {tower_stats[3]}', True, "black"),
-                tower_stat_font.render(f'Cooldown: {tower_stats[4]}', True, "black"),
-                tower_stat_font.render(f'Range: {tower_stats[5]}', True, "black"),
-                tower_stat_font.render(f'R-Speed:  {tower_stats[6]}', True, "black")
-            ]
-
-            self.clicked = False
-        else:
-            self.image = shop_images[ShopType[shop.upper()]]
-            self.open = False
-
-        self.rect = self.image.get_rect(center=(x, y))
-
-    # checks whether the mouse is hovering over the shop panel and changes the panel accordingly
-    def hovering(self):
-        if self.rect.collidepoint(mouse_xy):
-            self.open = True
-            self.rect.centery = 700
-        else:
-            self.open = False
-            self.rect.centery = 900
-
-        screen.blit(self.image, self.rect)
-        
-        return self.open
-
-    # checks if the shop is open and if so, displays all the items in the shop
-    def showing(self, open : bool):
-        hovering_on_tower = False
-        if open:
-            screen.blit(self.image, self.rect)
-            screen.blit(self.text, (self.rect.centerx-self.text.get_width()/2, self.rect.centery+self.rect.height/2))
-
-            # if the mouse is down when hovering over an item in the shop, it will wait until mouse not down, and attempt to buy that item
-            if self.rect.collidepoint(mouse_xy):
-                # hovering_on_tower used to determine whether to show tower stats
-                hovering_on_tower = True
-                if money >= self.cost:
-                    if mouse_down and not self.clicked:
-                        self.clicked = True
-                    elif not mouse_down and self.clicked:
-                        self.clicked = False
-                        return True, hovering_on_tower, self.cost, self.description, self.shop
-            else:
-                hovering_on_tower = False
-        
-        if hovering_on_tower:
-            return False, hovering_on_tower, 0, self.description
-        else:
-            return False, hovering_on_tower, 0
-        
-    # if the user bought a tower from the shop, it will follow the mouse until placed
-    def place_tower(self):
-        self.rect.centerx = mouse_xy[0]
-        self.rect.centery = mouse_xy[1]
-        screen.blit(self.image, self.rect)
-
-        mask1 = pygame.mask.from_surface(self.image)
-        mask2 = pygame.mask.from_surface(path)
-    
-        offset_x = map_offsets[0] - self.rect.left # type: ignore
-        offset_y = map_offsets[1] - self.rect.top # type: ignore
-
-        colliding = mask1.overlap(mask2, (offset_x, offset_y))
-        
-        # waits to place tower until mouse down and not touching track, it then waits for mouse release to place
-        if mouse_down and not colliding:
-            self.clicked = True
-        elif not mouse_down and self.clicked:
-            self.clicked = False
-            towers.add(Towers(self.shop, self.rect.centerx, self.rect.centery)) # type: ignore
-            self.rect.centerx = self.original_x
-            self.rect.centery = self.original_y
-            return False
-        
-        return True
-    
-    def show_stats(self, open : bool, hovering_on_tower : bool, tower_stats : list[pygame.Surface]|None):
-        if open:
-            if hovering_on_tower:
-                self.rect.bottomleft = mouse_xy
-                screen.blit(self.image, self.rect)
-                if tower_stats != None:
-                    for i in range(len(tower_stats)):
-                        screen.blit(tower_stats[i], (self.rect.topleft[0]+10, self.rect.topleft[1]+5+17*i))
-
-
-class Upgrades(pygame.sprite.Sprite):
-    def __init__(self, upgrade : str, x : int, y : int):
-        super().__init__()
-
-        self.upgrade = upgrade
-
-        self.x = x
-        self.y = y
-
-        upgrade_type_number = UpgradeType[upgrade.upper()].value # type: ignore
-
-        self.clicked = False
-        
-        self.image = upgrade_images[UpgradeType[upgrade.upper()]]
-
-        self.rect = self.image.get_rect(center=(x, y))      
-
-    def hovering(self, open : bool, right_side : bool):
-        if open:
-            # makes the upgrades open on the opposite side of the selected tower
-            if right_side:
-                self.rect.centerx = self.x
-            else:
-                self.rect.centerx = (self.x-640)*-1+640
-
-            self.open = True
-            screen.blit(self.image, self.rect)
-        else:
-            self.open = False
-        
-        return self.open
-    
-    def upgrades(self, open : bool, tower : str, tower_tier : int, right_side : bool, upgraded : list[bool]) -> list[int|str|float]:
-        upgrade_info_placeholder : list[int|str|float] = [0, "", 0.0]
-        if open:
-            # makes the upgrades open on the opposite side of the selected tower
-            if right_side:
-                self.rect.centerx = self.x
-            else:
-                self.rect.centerx = (self.x-640)*-1+640
-            
-            # shows the tower selected in upgrade menu
-            images = tower_images[TowerType[tower.upper()]]
-            screen.blit(images[0], (self.rect.x-(images[0].get_width()-self.rect.width)/2, 80))
-            screen.blit(images[1], (self.rect.x-(images[1].get_width()-self.rect.width)/2, 80-images[1].get_height()/2))
-
-            # shows the selected tower's name and tier
-            text = stat_font.render(tower.capitalize(), True, "black")
-            screen.blit(text, (self.rect.x-(text.get_width()-self.rect.width)/2, 160))
-            text = shop_font.render(f'Tier: {tower_tier}', True, "black")
-            screen.blit(text, (self.rect.x-(text.get_width()-self.rect.width)/2, 193))
-
-            # upgrades
-            screen.blit(self.image, (self.rect.x, self.rect.y))
-            screen.blit(self.image, (self.rect.x, self.rect.y+80))
-
-            text_info, upgrade_info = upgrade_text[UpgradeList[tower.upper()]]
-            
-            for i in range(len(text_info[tower_tier*2-2])):
-                screen.blit(text_info[tower_tier*2-2][i], (self.rect.x+7, self.rect.y+8+25*i)) # type: ignore
-                
-            for i in range(len(text_info[tower_tier*2-1])):            
-                screen.blit(text_info[tower_tier*2-1][i], (self.rect.x+7, self.rect.y+88+25*i)) # type: ignore
-
-            if self.rect.collidepoint(mouse_xy) and mouse_down and money >= int(upgrade_info[tower_tier*2-2][0]) and not upgraded[0]:
-                self.clicked = True
-            elif self.rect.collidepoint(mouse_xy) and not mouse_down and self.clicked:
-                self.clicked = False
-                return upgrade_info[tower_tier*2-2]
-            
-            if pygame.Rect(self.rect.x, self.rect.y+80, self.rect.width, self.rect.height).collidepoint(mouse_xy) and mouse_down and money >= int(upgrade_info[tower_tier*2-1][0]) and not upgraded[1]:
-                self.clicked = True
-            elif pygame.Rect(self.rect.x, self.rect.y+80, self.rect.width, self.rect.height).collidepoint(mouse_xy) and not mouse_down and self.clicked:
-                self.clicked = False
-                return upgrade_info[tower_tier*2-1]
-
-            # testing
-            pygame.draw.rect(screen, "red", (self.rect.centerx, 100, 5, 5))
-    
-        return upgrade_info_placeholder
-
 
     
 def stats(money : int, hp : int):
@@ -649,17 +109,14 @@ def stats(money : int, hp : int):
     text = stat_font.render(f'Health: {hp}', True, "black")
     screen.blit(text, (5, 35))
 
-# defines the towers group
-towers = pygame.sprite.Group() # type: ignore
+def draw_towers(image : pygame.Surface, rect : tuple[int]):
+    screen.blit(image, rect)
 
-towers.add(Towers("double", 640, 360)) # type: ignore
+
+
+towers.add(Towers("basic", 640, 360)) # type: ignore
 
 tower_projectiles = pygame.sprite.Group() # type: ignore
-
-# defines the enemies group
-enemies = pygame.sprite.Group() # type: ignore
-
-#enemies.add(Enemies("basic", 8, 280))
 
 # defines the shop group
 shop = pygame.sprite.Group() # type: ignore
@@ -667,7 +124,6 @@ shop = pygame.sprite.Group() # type: ignore
 shop.add(Shop("shopui", 640, 900)) # type: ignore
 shop.add(Shop("basic", 100, 540)) # type: ignore
 shop.add(Shop("double", 250, 540)) # type: ignore
-
 # KEEP THIS AT END OF SHOP ITEMS
 shop.add(Shop("towerui", 0, 0)) # type: ignore
 
@@ -711,7 +167,6 @@ while running:
     for sprite in towers: # type: ignore
         sprite.wait += 1 # type: ignore
         money += int(sprite.find_closest_enemy()[1]) # type: ignore
-        #sprite.shoot()
         sprite.unfire() # type: ignore
         sprite.rotate() # type: ignore
         open_list += [sprite.open_upgrades(upgrade_rect)] # type: ignore
@@ -774,6 +229,7 @@ while running:
         # only runs hovering function for the panel type in the shop group
         if sprite.shop == "shopui": # type: ignore
             open = bool(sprite.hovering()) # type: ignore
+        
         # runs normally for all other types in the shop group
         elif sprite.shop != "shopui" and sprite.shop != "towerui": # type: ignore
             if not found and not placing_tower:
@@ -812,3 +268,5 @@ while running:
     pygame.display.flip()
     clock.tick(30)
     #print(clock.get_fps())
+
+pygame.quit()

@@ -24,7 +24,7 @@ def tower_constants() -> list[list[str|int]]:
     # [A, B, C, D, E, F]
     # replace A with type, B with tier, C with turrets, D with dmg, E with cd, F with range, G with rotation speed, H with cost
     basic : list[str|int] = ["basic", 1, 1, 1, 60, 400, 100, 100]
-    double : list[str|int] = ["double", 1, 2, 4, 140, 200, 60, 300]
+    double : list[str|int] = ["double", 1, 2, 4, 140, 2000, 60, 300]
 
     return [
         basic,

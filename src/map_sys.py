@@ -1,5 +1,15 @@
 import pygame
 
+def select_map():
+    #return input("Map: ")
+    return "path1"
+
+def show_map():
+    from main import current_map
+    current_map = current_map
+    
+    return current_map
+
 # the map system
 def map(map : str):
     # loads the map based off of selected map
