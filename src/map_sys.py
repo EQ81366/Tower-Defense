@@ -1,4 +1,5 @@
 import pygame
+import json
 
 def select_map():
     global current_map
@@ -14,13 +15,12 @@ def show_map():
 # the map system
 def map(map : str):
     # loads the map based off of selected map
-    path = pygame.image.load("assets/map_images/"+map+".png")
-    # defines movement_nodes so it doesn't break if given an invalid map name
-    movement_nodes = []
-    map_offsets = ()
-    if map == "path1":
-        # all destinations for the enemy on a given map
-        movement_nodes = [[178, 260], [225, 560], [505, 560], [566, 254], [758, 259], [833, 586], [1130, 590], [1200, 260], [1279, 259]]
-        map_offsets = (-4, 200)
+    path = pygame.image.load(f"assets/map_images/{map}.png")
+    with open(f"assets/map_data/{map}.json") as f:
+        map_data = json.load(f)
+    
+    # all destinations for the enemy on a given map
+    movement_nodes = map_data.get("movement_nodes", [])
+    map_offsets = map_data.get("map_offsets", [])
     
     return path, movement_nodes, map_offsets
