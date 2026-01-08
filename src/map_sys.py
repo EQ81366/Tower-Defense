@@ -1,13 +1,14 @@
 import pygame
 
 def select_map():
+    global current_map
     #return input("Map: ")
-    return "path1"
+    current_map = "path1"
+    return current_map
+
+select_map()
 
 def show_map():
-    from main import current_map
-    current_map = current_map
-    
     return current_map
 
 # the map system

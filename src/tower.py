@@ -1,12 +1,15 @@
 import pygame, math, constants
 from image_loader import load_images, TowerType
 from tower_aiming import point_enemy
+from mouse import mouse_info
 from enemy import enemies #type: ignore
 
-tower_images = load_images()[1]
+tower_images = load_images(False, True, False, False)[0]
 
 # defines the towers group
 towers = pygame.sprite.Group() # type: ignore
+
+screen = pygame.display.set_mode((0, 0)) # in pixels
 
 class Towers(pygame.sprite.Sprite):
     def __init__(self, tower : str, x : int, y : int):
@@ -29,12 +32,13 @@ class Towers(pygame.sprite.Sprite):
         
         info = constants.tower_constants()[tower_type_number]
 
-        # base image
-        self.b_image = tower_image_bundle[0]
-        # turret image
-        self.image = tower_image_bundle[1]
-        # firing turret image
-        self.f_image = tower_image_bundle[2]
+        if isinstance(tower_image_bundle, list):
+            # base image
+            self.b_image = tower_image_bundle[0]
+            # turret image
+            self.image = tower_image_bundle[1]
+            # firing turret image
+            self.f_image = tower_image_bundle[2]
 
         # tower info
         self.tier = int(info[1])
@@ -44,8 +48,10 @@ class Towers(pygame.sprite.Sprite):
         self.range = int(info[5])
         self.r_speed = int(info[6])
 
-        if self.turrets > 1:
+        if isinstance(tower_image_bundle, list) and self.turrets > 1:
             self.f2_image = tower_image_bundle[3]
+
+        print("TF")
 
         # list of upgrades(bought and non-bought)
         self.upgrades_bought = {1:[False, False], 2:[False, False]}
@@ -80,7 +86,7 @@ class Towers(pygame.sprite.Sprite):
     
     # defines the rotation and firing animation of the tower
     def rotate(self):
-        from main import screen
+        #from main import screen
 
         dr = self.rotation_angle - self.current_angle
     
@@ -252,7 +258,7 @@ class Towers(pygame.sprite.Sprite):
         return [0, 0]
 
     def open_upgrades(self, upgrade_rect : pygame.Rect):
-        from main import mouse_xy, mouse_down
+        mouse_xy, mouse_down = mouse_info()
 
         if self.rect.collidepoint(mouse_xy):
             if mouse_down:

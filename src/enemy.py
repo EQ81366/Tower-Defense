@@ -3,7 +3,9 @@ from image_loader import load_images, EnemyType
 from constants import enemy_constants
 from map_sys import show_map, map
 
-enemy_images = load_images()[0]
+enemy_images = load_images(True, False, False, False)[0]
+
+movement_nodes = map(show_map())[1]
 
 # defines the enemies group
 enemies = pygame.sprite.Group() # type: ignore
@@ -11,8 +13,6 @@ enemies = pygame.sprite.Group() # type: ignore
 class Enemies(pygame.sprite.Sprite):
     def __init__(self, enemy : str, x : int, y : int):
         super().__init__()
-
-        self.movement_nodes = map(show_map())[1]
 
         self.enemy = enemy
 
@@ -23,18 +23,30 @@ class Enemies(pygame.sprite.Sprite):
 
         info = enemy_constants()[enemy_type_number]
 
-        self.image = enemy_images[EnemyType[enemy.upper()]]
+        placeholder = enemy_images[EnemyType[enemy.upper()]]
+        if isinstance(placeholder, pygame.Surface):
+            self.image = placeholder
+
+        # makes a copy of the enemies image but red
+        self.damage_image = self.image.copy()
+        with pygame.PixelArray(self.damage_image) as pixel_array:
+            pixel_array.replace(self.image.get_at((int(self.image.get_width()/2), int(self.image.get_height()/2))), (255, 0, 0))
 
         self.tier = int(info[1])
         self.speed = float(info[2])
         self.hp = int(info[3])
         self.max_hp = self.hp
+        # the more weight the less it's stunned with each hit
+        self.weight = int(info[4])
+
+        self.damage_frame_length = int(30/self.weight)
+        self.damage_frame = 0
 
         self.money_drop = round(4**self.tier)
 
         # allows for custom money drops
-        if len(info) > 4:
-            self.money_drop = int(info[4])
+        if len(info) > 5:
+            self.money_drop = int(info[5])
 
         self.rect = self.image.get_rect(center=(x, y))
         # sets the current destination number(refer to the map system above)
@@ -42,9 +54,10 @@ class Enemies(pygame.sprite.Sprite):
 
     # script to make enemies go to map destinations
     def pathfind(self):
-        if len(self.movement_nodes) != self.current_node:
+        self.damage_frame -= 1
+        if len(movement_nodes) != self.current_node and self.damage_frame <= 0:
             # determines which destination in the destination list to go to
-            destination = self.movement_nodes[self.current_node]
+            destination = movement_nodes[self.current_node]
 
             # next 10 lines enact vector normalized movement
             dx = destination[0] - self.rect.centerx
@@ -73,18 +86,20 @@ class Enemies(pygame.sprite.Sprite):
             elif (dx <= 0 and self.rect.centerx <= destination[0]) and (dy <= 0 and self.rect.centery <= destination[1]):
                 at_destination()
 
-            return 0
-
         # if enemy reaches end of map
-        elif len(self.movement_nodes) == self.current_node:
+        elif len(movement_nodes) == self.current_node:
             self.kill()
             # returns the amount of damage to deal
             return (2**self.tier)/2
         
+        return 0
+        
     def damage(self, damage : float) -> list[int]:
-        self.hp -= damage
-        if not self.hp > 0:
-            self.kill()
-            return [self.tier, self.money_drop]
+        if self.damage_frame <= 0:
+            self.hp -= damage
+            self.damage_frame = self.damage_frame_length
+            if not self.hp > 0:
+                self.kill()
+                return [self.tier, self.money_drop]
         
         return [0, 0]

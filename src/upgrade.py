@@ -1,11 +1,17 @@
 import pygame
 from image_loader import load_images, UpgradeType, TowerType
 from upgrade_loader import load_upgrades, UpgradeList
+from money import money_script
+from mouse import mouse_info
 
-tower_images = load_images()[1]
-upgrade_images = load_images()[3]
+tower_images, upgrade_images = load_images(False, True, False, True)
 
 upgrade_text = load_upgrades()
+
+# font
+stat_font = pygame.font.SysFont('Arial', 30)
+
+screen = pygame.display.set_mode((0, 0)) # in pixels
 
 class Upgrades(pygame.sprite.Sprite):
     def __init__(self, upgrade : str, x : int, y : int):
@@ -20,14 +26,14 @@ class Upgrades(pygame.sprite.Sprite):
 
         self.clicked = False
         
-        self.image = upgrade_images[UpgradeType[upgrade.upper()]]
+        placeholder = upgrade_images[UpgradeType[upgrade.upper()]]
+        if isinstance(placeholder, pygame.Surface):
+            self.image : pygame.Surface = placeholder
 
         self.rect = self.image.get_rect(center=(x, y))      
 
     def hovering(self, open : bool, right_side : bool):
         if open:
-            from main import screen
-
             # makes the upgrades open on the opposite side of the selected tower
             if right_side:
                 self.rect.centerx = self.x
@@ -44,7 +50,11 @@ class Upgrades(pygame.sprite.Sprite):
     def upgrades(self, open : bool, tower : str, tower_tier : int, right_side : bool, upgraded : list[bool]) -> list[int|str|float]:
         upgrade_info_placeholder : list[int|str|float] = [0, "", 0.0]
         if open:
-            from main import screen, stat_font, shop_font, mouse_xy, mouse_down, money
+            from shop import shop_font
+
+            money = money_script(None, 0)
+            
+            mouse_xy, mouse_down = mouse_info()
 
             # makes the upgrades open on the opposite side of the selected tower
             if right_side:
@@ -54,8 +64,9 @@ class Upgrades(pygame.sprite.Sprite):
             
             # shows the tower selected in upgrade menu
             images = tower_images[TowerType[tower.upper()]]
-            screen.blit(images[0], (self.rect.x-(images[0].get_width()-self.rect.width)/2, 80))
-            screen.blit(images[1], (self.rect.x-(images[1].get_width()-self.rect.width)/2, 80-images[1].get_height()/2))
+            if isinstance(images, list):
+                screen.blit(images[0], (self.rect.x-(images[0].get_width()-self.rect.width)/2, 80))
+                screen.blit(images[1], (self.rect.x-(images[1].get_width()-self.rect.width)/2, 80-images[1].get_height()/2))
 
             # shows the selected tower's name and tier
             text = stat_font.render(tower.capitalize(), True, "black")
