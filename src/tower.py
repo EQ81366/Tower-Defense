@@ -1,10 +1,10 @@
 import pygame, math, constants
-from image_loader import load_images, TowerType
+from image_loader import load_tower_images, TowerType
 from tower_aiming import point_enemy
 from mouse import mouse_info
 from enemy import enemies #type: ignore
 
-tower_images = load_images(False, True, False, False)[0]
+tower_images = load_tower_images
 
 # defines the towers group
 towers = pygame.sprite.Group() # type: ignore
@@ -50,8 +50,6 @@ class Towers(pygame.sprite.Sprite):
 
         if isinstance(tower_image_bundle, list) and self.turrets > 1:
             self.f2_image = tower_image_bundle[3]
-
-        print("TF")
 
         # list of upgrades(bought and non-bought)
         self.upgrades_bought = {1:[False, False], 2:[False, False]}

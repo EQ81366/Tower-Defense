@@ -132,12 +132,6 @@ if __name__ == "__main__":
     found = False
     temp_pkg = []
 
-
-
-
-
-    print("YPO WHAT")
-
     while running:
         for event in pygame.event.get():
             if event.type == pygame.QUIT:

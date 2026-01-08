@@ -1,10 +1,11 @@
 import pygame
-from image_loader import load_images, UpgradeType, TowerType
+from image_loader import load_tower_images, load_upgrade_images, UpgradeType, TowerType
 from upgrade_loader import load_upgrades, UpgradeList
 from money import money_script
 from mouse import mouse_info
 
-tower_images, upgrade_images = load_images(False, True, False, True)
+tower_images = load_tower_images()
+upgrade_images = load_upgrade_images()
 
 upgrade_text = load_upgrades()
 
