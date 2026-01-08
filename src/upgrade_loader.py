@@ -1,6 +1,5 @@
 import pygame
 from enum import Enum
-#from upgrades import upgrades
 
 pygame.font.init()
 
@@ -54,13 +53,6 @@ class UpgradeList(Enum):
     DOUBLE = 1
 
 def load_upgrades():
-    upgrade_list : dict[Enum, tuple[list[list[pygame.Surface]], list[list[int|str|float]]]] = {}
-
-    for enum in UpgradeList:
-        #print(enum.name)
-        upgrade_list[enum] = upgrades(enum.name)
-        #print(upgrade_list)
-
-    return upgrade_list
+    return {enum: upgrades(enum.name) for enum in UpgradeList}
 
 #load_upgrades()

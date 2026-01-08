@@ -14,15 +14,21 @@ def point_mouse(x : int, y : int, mouse_xy : list[int]):
 
     return direction
 
-# finds the angle between 2 objects
-def point_enemy(x : int, y : int, x2 : int, y2 : int):
-    # x2-x == 0 makes sure it doesn't try to divide by 0
-    if x2-x == 0:
-        direction = -90-math.degrees(math.atan((y2-y)))
-    else:
-        if x2 < x:
-            direction = 90-(math.atan((y2-y)/(x2-x)))*(180/math.pi)
-        else:
-            direction = -90-(math.atan((y2-y)/(x2-x)))*(180/math.pi)
+def point_enemy(x: int, y: int, x2: int, y2: int):
+    # Compute horizontal and vertical differences
+    dx = x2 - x
+    dy = y2 - y
 
-    return direction
+    # Special case: dx == 0 would cause division by zero in atan(dy/dx)
+    if dx == 0:
+        return -90 - math.degrees(math.atan(dy))
+
+    # Compute the base angle using dy/dx
+    angle = math.degrees(math.atan(dy / dx))
+
+    # If the target is to the LEFT (dx < 0)
+    if dx < 0:
+        return 90 - angle
+
+    # If the target is to the RIGHT (dx > 0)
+    return -90 - angle

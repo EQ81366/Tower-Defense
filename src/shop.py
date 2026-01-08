@@ -1,12 +1,13 @@
 import pygame
 from constants import tower_constants
-from image_loader import load_images, ShopType, TowerType
+from image_loader import load_tower_images, load_shop_images, ShopType, TowerType
 from map_sys import show_map, map
 from money import money_script
 from mouse import mouse_info
 from tower import Towers, towers # type: ignore
 
-tower_images, shop_images = load_images(False, True, True, False) # reminder: move this someplace better
+tower_images = load_tower_images()
+shop_images = load_shop_images()
 
 pygame.font.init()
 
