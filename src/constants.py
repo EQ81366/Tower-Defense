@@ -1,7 +1,7 @@
 from enum import Enum
 
 def stat_constants():
-    starting_money = 100
+    starting_money = 10000000
     hp = 100
 
     return [

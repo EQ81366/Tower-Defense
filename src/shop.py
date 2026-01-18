@@ -6,7 +6,7 @@ from money import money_script
 from mouse import mouse_info
 from tower import Towers, towers # type: ignore
 
-tower_images, shop_images = load_images(False, True, True, False) # reminder: move this someplace better
+tower_images, shop_images = load_images(["tower", "shop"])
 
 pygame.font.init()
 

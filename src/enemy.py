@@ -3,7 +3,7 @@ from image_loader import load_images, EnemyType
 from constants import enemy_constants
 from map_sys import show_map, map
 
-enemy_images = load_images(True, False, False, False)[0]
+enemy_images = load_images(["enemy"])[0]
 
 movement_nodes = map(show_map())[1]
 

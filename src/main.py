@@ -136,8 +136,6 @@ if __name__ == "__main__":
 
 
 
-    print("YPO WHAT")
-
     while running:
         for event in pygame.event.get():
             if event.type == pygame.QUIT:

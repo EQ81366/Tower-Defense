@@ -4,7 +4,7 @@ from upgrade_loader import load_upgrades, UpgradeList
 from money import money_script
 from mouse import mouse_info
 
-tower_images, upgrade_images = load_images(False, True, False, True)
+tower_images, upgrade_images = load_images(["tower", "upgrade"])
 
 upgrade_text = load_upgrades()
 

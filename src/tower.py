@@ -4,7 +4,7 @@ from tower_aiming import point_enemy
 from mouse import mouse_info
 from enemy import enemies #type: ignore
 
-tower_images = load_images(False, True, False, False)[0]
+tower_images = load_images(["tower"])[0]
 
 # defines the towers group
 towers = pygame.sprite.Group() # type: ignore
@@ -51,14 +51,14 @@ class Towers(pygame.sprite.Sprite):
         if isinstance(tower_image_bundle, list) and self.turrets > 1:
             self.f2_image = tower_image_bundle[3]
 
-        print("TF")
-
         # list of upgrades(bought and non-bought)
         self.upgrades_bought = {1:[False, False], 2:[False, False]}
 
         # amount of each enemy tier killed
         # first number enemy tier, second number amount
-        self.enemies_killed : dict[int, int] = {1:0, 2:0, 3:0, 4:0, 5:0}
+        self.enemies_killed : dict[int, int] = {}
+        for i in range(5):
+            self.enemies_killed[i+1] = 0
 
         # makes the physical circle of range
         self.range_circle = pygame.image.load("assets/circle.png")
@@ -86,7 +86,7 @@ class Towers(pygame.sprite.Sprite):
     
     # defines the rotation and firing animation of the tower
     def rotate(self):
-        #from main import screen
+        print(self.tier, self.upgrades_bought, self.enemies_killed)
 
         dr = self.rotation_angle - self.current_angle
     

@@ -34,10 +34,10 @@ class UpgradeType(Enum):
     BASICUPGRADES = 1
 
 # loads all game images
-def load_images(enemy : bool, tower : bool, shop : bool, upgrade : bool):
+def load_images(retrieve : list[str]):
     image_list : list[Mapping[Enum, pygame.Surface|list[pygame.Surface]]] = []
 
-    if enemy:
+    if retrieve.count("enemy") > 0:
         enemy_image_paths = sorted(image_paths("enemy")) # list of all enemy image paths
         enemy_list : dict[Enum, pygame.Surface] = {} # dict of all enemy images
 
@@ -47,7 +47,7 @@ def load_images(enemy : bool, tower : bool, shop : bool, upgrade : bool):
 
         image_list.append(enemy_list)
 
-    if tower:
+    if retrieve.count("tower") > 0:
         tower_image_paths = sorted(image_paths("tower")) # list of all tower image paths
         tower_list : dict[Enum, list[pygame.Surface]] = {} # dict of all tower images
 
@@ -65,7 +65,7 @@ def load_images(enemy : bool, tower : bool, shop : bool, upgrade : bool):
         
         image_list.append(tower_list)
         
-    if shop:
+    if retrieve.count("shop") > 0:
         shop_image_paths = sorted(image_paths("shop")) # list of all shop image paths
         shop_list : dict[Enum, pygame.Surface] = {} # dict of all shop images
 
@@ -75,7 +75,7 @@ def load_images(enemy : bool, tower : bool, shop : bool, upgrade : bool):
 
         image_list.append(shop_list)
 
-    if upgrade:
+    if retrieve.count("upgrade") > 0:
         upgrade_image_paths = sorted(image_paths("upgrade")) # list of all upgrade image paths
         upgrade_list : dict[Enum, pygame.Surface] = {} # dict of all upgrade images
 
