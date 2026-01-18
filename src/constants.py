@@ -10,7 +10,7 @@ def stat_constants():
     ]
 
 def enemy_constants() -> list[list[str|int|float]]:
-    # [A, B, C, D, (E)]
+    # [A, B, C, D, E, (F)]
     # replace A with type, B with tier, C with speed, D with hp, E with weight, (F with custom money drop)
     basic : list[str|int|float] = ["basic", 1, 3.0, 5, 1]
     tank : list[str|int|float] = ["tank", 1, 0.5, 100, 4]
