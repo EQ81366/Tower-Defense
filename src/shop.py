@@ -1,10 +1,11 @@
 import pygame
+from typing import TYPE_CHECKING, Any
 from constants import tower_constants
 from image_loader import load_images, ShopType, TowerType
 from map_sys import show_map, map
 from money import money_script
 from mouse import mouse_info
-from tower import Towers, towers # type: ignore
+from tower import Towers, towers
 
 tower_images, shop_images = load_images(["tower", "shop"])
 
@@ -16,34 +17,28 @@ screen = pygame.display.set_mode((120, 720)) # in pixels
 tower_stat_font = pygame.font.SysFont('Arial', 16)
 shop_font = pygame.font.SysFont('Arial', 25)
 
-# defines the shop group
-shop = pygame.sprite.Group() # type: ignore
-
-
 class Shop(pygame.sprite.Sprite):
-    def __init__(self, shop : str, x : int, y : int):
+    def __init__(self, *groups : Any):
         super().__init__()
 
         self.path = map(show_map())[0]
         self.map_offsets = map(show_map())[2]
 
-        self.shop = shop
+        self.shop : str = groups[0]
 
-        self.original_x = x
-        self.original_y = y
+        self.original_x : int = groups[1]
+        self.original_y : int = groups[2]
 
         # defines generic things for non-panel shop items
-        if not shop.upper() in ShopType.__members__:
-            tower_type_number = TowerType[shop.upper()].value
+        if not self.shop.upper() in ShopType.__members__:
+            tower_type_number = TowerType[self.shop.upper()].value
 
-            placeholder = tower_images[TowerType[shop.upper()]]
-            if isinstance(placeholder, list):
-                self.image : pygame.Surface = placeholder[0] # loads a tower base image
+            self.image : pygame.Surface = tower_images[TowerType[self.shop.upper()]][0] # loads a tower base image
 
             tower_stats = tower_constants()[tower_type_number]
             self.cost = int(tower_stats[7])
 
-            self.text = shop_font.render(f'{shop.capitalize()} ${self.cost}', True, "black")
+            self.text = shop_font.render(f'{self.shop.capitalize()} ${self.cost}', True, "black")
 
             self.description = [
                 tower_stat_font.render(f'{self.shop.capitalize()}:', True, "black"),
@@ -55,13 +50,11 @@ class Shop(pygame.sprite.Sprite):
 
             self.clicked = False
         else:
-            placeholder = shop_images[ShopType[shop.upper()]]
-            if isinstance(placeholder, pygame.Surface):
-                self.image : pygame.Surface = placeholder
+            self.image : pygame.Surface = shop_images[ShopType[self.shop.upper()]][0]
 
             self.open = False
 
-        self.rect = self.image.get_rect(center=(x, y))
+        self.rect = self.image.get_rect(center=(self.original_x, self.original_y))
 
     # checks whether the mouse is hovering over the shop panel and changes the panel accordingly
     def hovering(self):
@@ -103,10 +96,7 @@ class Shop(pygame.sprite.Sprite):
             else:
                 hovering_on_tower = False
         
-        if hovering_on_tower:
-            return False, hovering_on_tower, 0, self.description
-        else:
-            return False, hovering_on_tower, 0
+        return False, hovering_on_tower, 0, self.description, "s"
         
     # if the user bought a tower from the shop, it will follow the mouse until placed
     def place_tower(self):
@@ -119,8 +109,8 @@ class Shop(pygame.sprite.Sprite):
         mask1 = pygame.mask.from_surface(self.image)
         mask2 = pygame.mask.from_surface(self.path)
     
-        offset_x = self.map_offsets[0] - self.rect.left # type: ignore
-        offset_y = self.map_offsets[1] - self.rect.top # type: ignore
+        offset_x = self.map_offsets[0] - self.rect.left
+        offset_y = self.map_offsets[1] - self.rect.top
 
         colliding = mask1.overlap(mask2, (offset_x, offset_y))
         
@@ -129,7 +119,7 @@ class Shop(pygame.sprite.Sprite):
             self.clicked = True
         elif not mouse_down and self.clicked:
             self.clicked = False
-            towers.add(Towers(self.shop, self.rect.centerx, self.rect.centery)) # type: ignore
+            towers.add(Towers(self.shop, self.rect.centerx, self.rect.centery))
             self.rect.centerx = self.original_x
             self.rect.centery = self.original_y
             return False
@@ -145,3 +135,12 @@ class Shop(pygame.sprite.Sprite):
             if tower_stats != None:
                 for i in range(len(tower_stats)):
                     screen.blit(tower_stats[i], (self.rect.topleft[0]+10, self.rect.topleft[1]+5+17*i))
+
+
+if TYPE_CHECKING:
+    Type = pygame.sprite.Group[Shop]
+else:
+    Type = pygame.sprite.Group
+
+# defines the towers group
+shop : Type = pygame.sprite.Group()

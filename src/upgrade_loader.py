@@ -31,7 +31,7 @@ def upgrades(type : str):
             [300, "r_speed", 1.35, 2.2]
         ]
 
-    if type == "DOUBLE":
+    elif type == "DOUBLE":
         upgrade_images = [
             [render_text("Better Goggles:"), render_text("30% more range")],
             [render_text("Higher Caliber:"), render_text("deals 25% more damage")],

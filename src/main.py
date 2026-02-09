@@ -2,10 +2,10 @@ if __name__ == "__main__":
 
     import pygame, constants, math, map_sys
 
-    from enemy import Enemies, enemies # type: ignore
-    from tower import Towers, towers # type: ignore
-    from shop import Shop, shop # type: ignore
-    from upgrade import Upgrades, stat_font
+    from enemy import Enemies, enemies
+    from tower import Towers, towers
+    from shop import Shop, shop
+    from upgrade import Upgrades, upgrades, stat_font
     from money import money_script
 
     # TO-DO LIST
@@ -89,9 +89,9 @@ if __name__ == "__main__":
 
             screen.blit(self.r_image, (self.rect.x+x_offset, self.rect.y-y_offset))
 
-            for sprite in enemies: # type: ignore
-                if self.rect.colliderect(sprite.rect): # type: ignore
-                    sprite.kill() # type: ignore
+            for sprite in enemies:
+                if self.rect.colliderect(sprite.rect):
+                    sprite.kill()
 
 
         
@@ -106,30 +106,29 @@ if __name__ == "__main__":
 
 
 
-    towers.add(Towers("basic", 640, 360)) # type: ignore
+    towers.add(Towers("basic", 640, 360))
 
     tower_projectiles = pygame.sprite.Group() # type: ignore
 
 
-    shop.add(Shop("shopui", 640, 900)) # type: ignore
-    shop.add(Shop("basic", 100, 540)) # type: ignore
-    shop.add(Shop("double", 250, 540)) # type: ignore
-    # KEEP THIS AT END OF SHOP ITEMS
-    shop.add(Shop("towerui", 0, 0)) # type: ignore
+    shop.add(Shop("shopui", 640, 900))
+    shop.add(Shop("basic", 100, 540))
+    shop.add(Shop("double", 250, 540))
+    shop.add(Shop("towerui", 0, 0)) # KEEP THIS AT END OF SHOP ITEMS
 
-    upgrades = pygame.sprite.Group() # type: ignore
-    upgrades.add(Upgrades("upgradeui", 1180, 360)) # type: ignore
-    upgrades.add(Upgrades("basicupgrades", 1160, 360)) # type: ignore
+    upgrades.add(Upgrades("upgradeui", 1180, 360))
+    upgrades.add(Upgrades("basicupgrades", 1160, 360))
     
     # and so begins the main script
     x = 0
     upgrade_info : list[int|str|float] = [0, "", 0.0]
     upgrading : str = ""
-    upgrade_rect = pygame.Rect(0, 0, 0, 0)
+    upgrade_rect : pygame.Rect = pygame.Rect(0, 0, 0, 0)
 
     hovering_on_tower = False
+    tower_being_bought = False
     tower_stats = None
-    found = False
+    money_spent = 0
     temp_pkg = []
 
 
@@ -159,35 +158,34 @@ if __name__ == "__main__":
         tower_selected = None
         right_side = True
         tower_tier = 0
-        for sprite in towers: # type: ignore
-            sprite.wait += 1 # type: ignore
-            money_script(True, int(sprite.find_closest_enemy()[1])) # type: ignore
-            sprite.unfire() # type: ignore
-            sprite.rotate() # type: ignore
-            open_list += [sprite.open_upgrades(upgrade_rect)] # type: ignore
-            range_circle_test = sprite.show_range() # type: ignore
+        for sprite in towers:
+            sprite.wait += 1
+            money_script(True, int(sprite.find_closest_enemy()[1]))
+            sprite.unfire()
+            sprite.rotate()
+            open_list += [sprite.open_upgrades(upgrade_rect)]
+            range_circle_test = sprite.show_range()
             if range_circle_test != None:
-                range_circle = range_circle_test # type: ignore
-                tower_selected = sprite.tower # type: ignore
-                tower_tier = sprite.tier #type: ignore
+                range_circle = range_circle_test
+                tower_selected = sprite.tower
+                tower_tier = sprite.tier
 
-                if sprite.x > 640: # type: ignore
+                if sprite.x > 640:
                     right_side = False
 
-        tower_group = towers.sprites() # type: ignore
+        tower_group = towers.sprites()
 
         if range_circle != None:
-            screen.blit(range_circle[0], range_circle[1]) # type: ignore
+            screen.blit(range_circle[0], range_circle[1])
 
 
 
 
         # cycles through all the necessary commands for the enemies group
-        for sprite in enemies: # type: ignore
-            hp -= int(sprite.pathfind()) # type: ignore
+        for sprite in enemies:
+            hp -= int(sprite.pathfind())
 
-        # draws the enemies on the screen
-        enemies.draw(screen)
+        enemies.draw(screen) # draws the enemies on the screen
 
 
 
@@ -199,30 +197,28 @@ if __name__ == "__main__":
 
         # cycles through all the necessary commands for the upgrades group
         upgrade_info = [0, "", 0.0]
-        for sprite in upgrades: # type: ignore
-            if sprite.upgrade == "upgradeui": # type: ignore
-                sprite.hovering(open, right_side) # type: ignore
-                upgrade_rect = sprite.rect # type: ignore
+        for sprite in upgrades:
+            if sprite.upgrade == "upgradeui":
+                sprite.hovering(open, right_side)
+                upgrade_rect = sprite.rect
+            elif open_list.count(True) > 0:
+                upgrade_info = sprite.upgrades(open, tower_selected, tower_tier, right_side, tower_group[open_list.index(True)].upgrades_bought[tower_group[open_list.index(True)].tier])
             else:
-                if open_list.count(True) > 0:
-                    upgrade_info = sprite.upgrades(open, tower_selected, tower_tier, right_side, tower_group[open_list.index(True)].upgrades_bought[tower_group[open_list.index(True)].tier]) # type: ignore
-                else:
-                    upgrade_info = sprite.upgrades(open, tower_selected, tower_tier, right_side, [False, False]) # type: ignore
+                upgrade_info = sprite.upgrades(open, tower_selected, tower_tier, right_side, [False, False])
 
-        # the stat being upgraded
-        upgrading = upgrade_info[1]
+        upgrading = upgrade_info[1] # the stat being upgraded
 
         if open_list.count(True) > 0 and upgrading != "":
             # subtracts the cost of the money from your money
             upgrade_cost : int = int(upgrade_info[0])
             money_script(False, upgrade_cost)
 
-            current_stat = getattr(tower_group[open_list.index(True)], upgrading) # type: ignore
-            setattr(tower_group[open_list.index(True)], upgrading, current_stat*upgrade_info[2]) # type: ignore
+            current_stat = getattr(tower_group[open_list.index(True)], upgrading)
+            setattr(tower_group[open_list.index(True)], upgrading, current_stat*upgrade_info[2])
             if str(upgrade_info[3]).find(".1") != -1:
-                tower_group[open_list.index(True)].upgrades_bought[tower_group[open_list.index(True)].tier][0] = True # type: ignore
+                tower_group[open_list.index(True)].upgrades_bought[tower_group[open_list.index(True)].tier][0] = True
             elif str(upgrade_info[3]).find(".2") != -1:
-                tower_group[open_list.index(True)].upgrades_bought[tower_group[open_list.index(True)].tier][1] = True # type: ignore
+                tower_group[open_list.index(True)].upgrades_bought[tower_group[open_list.index(True)].tier][1] = True
 
 
 
@@ -230,47 +226,45 @@ if __name__ == "__main__":
 
         # cycles through all the necessary commands for the shop group
         hovering_list : list[bool] = []
-        for sprite in shop: # type: ignore
-            found = False
+        for sprite in shop:
             # only runs hovering function for the panel type in the shop group
-            if sprite.shop == "shopui": # type: ignore
-                open = bool(sprite.hovering()) # type: ignore
+            if sprite.shop == "shopui":
+                open = bool(sprite.hovering())
             
             # runs normally for all other types in the shop group
-            elif sprite.shop != "shopui" and sprite.shop != "towerui": # type: ignore
-                if not found and not placing_tower:
-                    temp_pkg = sprite.showing(open) # type: ignore
-                    hovering_on_tower = bool(temp_pkg[1]) # type: ignore
+            elif sprite.shop != "shopui" and sprite.shop != "towerui":
+                if not placing_tower:
+                    temp_pkg = sprite.showing(open)
+                    placing_tower = temp_pkg[0]
+                    hovering_on_tower = temp_pkg[1]
+                    money_spent = temp_pkg[2]
+
                     if hovering_on_tower:
-                        tower_stats = temp_pkg[3] # type: ignore
-                        found = True
-
-                if not placing_tower:
-                    placing_tower = bool(temp_pkg[0]) # type: ignore
+                        tower_stats = temp_pkg[3]
         
-                if placing_tower:
-                    tower_being_bought = str(temp_pkg[4]) # type: ignore
-                    if tower_being_bought == sprite.shop: # type: ignore
-                        placing_tower = bool(sprite.place_tower()) # type: ignore
+                    if placing_tower:
+                        tower_being_bought = str(temp_pkg[4])
+                    
+                if tower_being_bought == sprite.shop and placing_tower:
+                    placing_tower = bool(sprite.place_tower())
 
                 if not placing_tower:
-                    found = False
-                    money_script(False, int(temp_pkg[2])) # type: ignore
+                    money_script(False, money_spent)
 
                 hovering_list += [hovering_on_tower]
             else:
                 if hovering_list.count(True) > 0:
                     hovering_on_tower = True
 
-                sprite.show_stats(open, hovering_on_tower, tower_stats) # type: ignore
+                sprite.show_stats(open, hovering_on_tower, tower_stats)
 
 
         money = money_script(None, 0)
         stats(money, hp)
 
         x += 1
-        if x > 100:
-            enemies.add(Enemies("basic", 8, 280)) # type: ignore
+        if x > 10:
+            enemies.add(Enemies("basic", 8, 280))
             x = -1000
 
         pygame.display.flip()
