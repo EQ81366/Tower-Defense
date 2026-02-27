@@ -1,21 +1,18 @@
 import pygame
 from typing import TYPE_CHECKING, Any
-from constants import tower_constants
+from constants import TowerConstants
 from image_loader import load_images, ShopType, TowerType
 from map_sys import show_map, map
 from money import money_script
 from mouse import mouse_info
 from tower import Towers, towers
+from fonts import font_25, font_16
 
 tower_images, shop_images = load_images(["tower", "shop"])
 
 pygame.font.init()
 
 screen = pygame.display.set_mode((120, 720)) # in pixels
-
-# fonts
-tower_stat_font = pygame.font.SysFont('Arial', 16)
-shop_font = pygame.font.SysFont('Arial', 25)
 
 class Shop(pygame.sprite.Sprite):
     def __init__(self, *groups : Any):
@@ -31,21 +28,21 @@ class Shop(pygame.sprite.Sprite):
 
         # defines generic things for non-panel shop items
         if not self.shop.upper() in ShopType.__members__:
-            tower_type_number = TowerType[self.shop.upper()].value
+            #tower_type_number = TowerType[self.shop.upper()].value
 
             self.image : pygame.Surface = tower_images[TowerType[self.shop.upper()]][0] # loads a tower base image
 
-            tower_stats = tower_constants()[tower_type_number]
+            tower_stats = TowerConstants[self.shop.upper()].value
             self.cost = int(tower_stats[7])
 
-            self.text = shop_font.render(f'{self.shop.capitalize()} ${self.cost}', True, "black")
+            self.text = font_25.render(f'{self.shop.capitalize()} ${self.cost}', True, "black")
 
             self.description = [
-                tower_stat_font.render(f'{self.shop.capitalize()}:', True, "black"),
-                tower_stat_font.render(f'Damage: {tower_stats[3]}', True, "black"),
-                tower_stat_font.render(f'Cooldown: {tower_stats[4]}', True, "black"),
-                tower_stat_font.render(f'Range: {tower_stats[5]}', True, "black"),
-                tower_stat_font.render(f'R-Speed:  {tower_stats[6]}', True, "black")
+                font_16.render(f'{self.shop.capitalize()}:', True, "black"),
+                font_16.render(f'Damage: {tower_stats[3]}', True, "black"),
+                font_16.render(f'Cooldown: {tower_stats[4]}', True, "black"),
+                font_16.render(f'Range: {tower_stats[5]}', True, "black"),
+                font_16.render(f'R-Speed:  {tower_stats[6]}', True, "black")
             ]
 
             self.clicked = False

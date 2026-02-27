@@ -1,15 +1,14 @@
 import pygame
 from typing import TYPE_CHECKING, Any
 from image_loader import load_images, UpgradeType, TowerType
-from upgrade_loader import load_upgrades, UpgradeList
+from upgrade_loader import load_upgrades
 from money import money_script
 from mouse import mouse_info
+from fonts import font_30, font_25
 
 tower_images, upgrade_images = load_images(["tower", "upgrade"])
 
 upgrade_text = load_upgrades()
-
-stat_font = pygame.font.SysFont('Arial', 30) # font
 
 screen = pygame.display.set_mode((0, 0)) # in pixels
 
@@ -21,8 +20,6 @@ class Upgrades(pygame.sprite.Sprite):
 
         self.x : int = groups[1]
         self.y : int = groups[2]
-
-        upgrade_type_number = UpgradeType[self.upgrade.upper()].value
 
         self.clicked = False
         
@@ -43,13 +40,11 @@ class Upgrades(pygame.sprite.Sprite):
         else:
             self.open = False
         
-        return self.open
+        #return self.open
     
     def upgrades(self, open : bool, tower : str, tower_tier : int, right_side : bool, upgraded : list[bool]) -> list[int|str|float]:
         upgrade_info_placeholder : list[int|str|float] = [0, "", 0.0]
         if open:
-            from shop import shop_font
-
             money = money_script(None, 0)
             
             mouse_xy, mouse_down = mouse_info()
@@ -66,16 +61,16 @@ class Upgrades(pygame.sprite.Sprite):
             screen.blit(images[1], (self.rect.x-(images[1].get_width()-self.rect.width)/2, 80-images[1].get_height()/2))
 
             # shows the selected tower's name and tier
-            text = stat_font.render(tower.capitalize(), True, "black")
+            text = font_30.render(tower.capitalize(), True, "black")
             screen.blit(text, (self.rect.x-(text.get_width()-self.rect.width)/2, 160))
-            text = shop_font.render(f'Tier: {tower_tier}', True, "black")
+            text = font_25.render(f'Tier: {tower_tier}', True, "black")
             screen.blit(text, (self.rect.x-(text.get_width()-self.rect.width)/2, 193))
 
             # shows upgrades
             screen.blit(self.image, (self.rect.x, self.rect.y))
             screen.blit(self.image, (self.rect.x, self.rect.y+80))
 
-            text_info, upgrade_info = upgrade_text[UpgradeList[tower.upper()]]
+            text_info, upgrade_info = upgrade_text[TowerType[tower.upper()]] # gets the upgrade info for the tower currently selected
 
             for i in range(len(text_info[tower_tier*2-2])):
                 screen.blit(text_info[tower_tier*2-2][i], (self.rect.x+7, self.rect.y+8+25*i))
