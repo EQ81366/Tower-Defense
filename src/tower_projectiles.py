@@ -1,16 +1,21 @@
 import pygame, math, numpy
 from typing import Any, TYPE_CHECKING
 from enemy import enemies
+from money import money_script
+from image_loader import TowerType
 
 screen = pygame.display.set_mode((0, 0)) # in pixels
 
 
 # defines the Tower_Projectiles class
 class Tower_Projectiles(pygame.sprite.Sprite):
+    image = pygame.image.load("assets/b.png")
     def __init__(self, *groups : Any):    
         super().__init__()
 
-        self.projectile = groups[0]
+        self.tower_id = groups[5]
+
+        self.projectile : TowerType = groups[0]
 
         self.x = groups[1]
         self.y = groups[2]
@@ -20,13 +25,17 @@ class Tower_Projectiles(pygame.sprite.Sprite):
         self.damage = groups[4]
 
         # checks which projectile was spawned
-        if self.projectile == "basic":
-            self.image = pygame.image.load("assets/b.png")
+        if self.projectile == TowerType.BASIC:
+            #self.image = pygame.image.load("assets/b.png")
             self.speed = 100
+            self.pierce = 2 # pierce = hp
+        elif self.projectile == TowerType.DOUBLE:
+            #self.image = pygame.image.load("assets/b.png")
+            self.speed = 200
             self.pierce = 2 # pierce = hp
 
         if self.speed > 10000:
-           self.speed = 1000000
+           self.speed = 10000
         elif self.speed < 0:
             self.speed = 1
 
@@ -84,12 +93,17 @@ class Tower_Projectiles(pygame.sprite.Sprite):
                 if d >= 0 and distance <= self.speed + sprite.rect.width + 5:
                     time_to_impact = numpy.roots([a, b, c])[1]
                     if time_to_impact <= 0:
-                        sprite.damage(self.damage)
+                        enemy_death_info = sprite.damage(self.damage)
                         self.pierce -= 1
-                        print(distance)
+                        if enemy_death_info != [0, 0]:
+                            money_script(True, enemy_death_info[1])
+
+                        return enemy_death_info, self.tower_id
 
                 if self.pierce <= 0:
                     self.kill()
+        
+        return [0, 0], self.tower_id
 
 
 if TYPE_CHECKING:

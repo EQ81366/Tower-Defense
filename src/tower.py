@@ -12,15 +12,20 @@ tower_images = load_images(["tower"])[0]
 screen = pygame.display.set_mode((0, 0)) # in pixels
 
 class Towers(pygame.sprite.Sprite):
+    id = 0
+    range_circle = pygame.image.load("assets/circle.png")
 
     def __init__(self, *groups : Any):
         super().__init__()
 
-        self.tower : str = groups[0]
+        self.id = Towers.id
+        Towers.id += 1
+
+        self.tower : TowerType = groups[0]
         self.x : int = groups[1]
         self.y : int = groups[2]
 
-        info = TowerConstants[self.tower.upper()].value
+        info = TowerConstants[self.tower.name].value
         self.tier = int(info[1])
         self.turrets = int(info[2])
         self.damage = int(info[3])
@@ -28,18 +33,19 @@ class Towers(pygame.sprite.Sprite):
         self.range = int(info[5])
         self.rotation_speed = int(info[6])
 
+        self.recoil_multiplier = 5
+
         self.wait = self.cooldown
         self.shots_left = self.turrets # sets shots available to the amount of turrets
         self.current_angle = 0
         self.rotation_angle = 0
 
         self.upgrades_bought = {i : [False, False] for i in range(2)}
-        self.enemies_killed = {i : 0 for i in range(5)}
+        self.enemies_killed : dict[int, int] = {i : 0 for i in range(5)}
 
-        self.range_circle = pygame.image.load("assets/circle.png")
-        self.range_circle_scaled = pygame.transform.scale(self.range_circle, (self.range*2, self.range*2)) # scales the range circle accordingly to tower range
+        #self.range_circle_scaled = pygame.transform.scale(self.range_circle, (self.range*2, self.range*2)) # scales the range circle accordingly to tower range
 
-        tower_image_bundle = tower_images[TowerType[self.tower.upper()]] 
+        tower_image_bundle = tower_images[self.tower]
         self.b_image = tower_image_bundle[0]
         self.image = tower_image_bundle[1]
         self.f_image = tower_image_bundle[2]
@@ -59,17 +65,17 @@ class Towers(pygame.sprite.Sprite):
     
     # defines the rotation and firing animation of the tower
     def rotate(self):
-        #print(self.tier, self.upgrades_bought, self.enemies_killed)
-
-        if self.current_angle >= 360:
-                self.current_angle = 0
+        if self.current_angle >= 180:
+            self.current_angle = -180
+        elif self.current_angle < -180:
+            self.current_angle = 179
 
         dr = self.rotation_angle - self.current_angle
     
         if abs(dr) > 1:
             self.current_angle += self.rotation_speed/60 * dr/abs(dr)
             dr = self.rotation_angle - self.current_angle
-            if abs(dr) <= 2*(self.rotation_speed/100):
+            if abs(dr) <= 2*(self.rotation_speed/100): # if rotation is close enough based upon rotational speed it just accepts the wanted rotation value
                 self.current_angle = self.rotation_angle
 
         self.r_image = pygame.transform.rotate(self.image, self.current_angle)
@@ -78,10 +84,10 @@ class Towers(pygame.sprite.Sprite):
 
         # if shooting, switches image to shooting image
         if self.firing:
-            if self.wait < self.cooldown/10 and self.turrets-1 == self.shots_left:
+            if self.wait < self.cooldown/((self.shots_left+1)*self.recoil_multiplier) and self.turrets-1 == self.shots_left:
                 self.r_image = pygame.transform.rotate(self.f_image, self.current_angle)
             
-            elif self.wait < self.cooldown/5 and self.turrets-2 == self.shots_left:
+            elif self.wait < self.cooldown/((self.shots_left+1)*self.recoil_multiplier) and self.turrets-2 == self.shots_left:
                 self.r_image = pygame.transform.rotate(self.f2_image, self.current_angle)
 
             self.rect = self.r_image.get_rect(center=(xy[0], xy[1]))
@@ -92,16 +98,15 @@ class Towers(pygame.sprite.Sprite):
         screen.blit(self.b_image, self.b_rect)
         screen.blit(self.r_image, (self.rect.x+self.dx, self.rect.y-self.dy))
 
-    # determines whether the tower can shoot yet
-    # CURRENTLY OBSOLETE(most likely will not be added again)
-    def shoot(self):
-        #  ⌄⌄⌄⌄⌄⌄⌄⌄⌄⌄⌄⌄⌄⌄⌄⌄⌄⌄⌄⌄⌄⌄⌄⌄⌄⌄⌄⌄⌄⌄⌄⌄⌄⌄⌄⌄uncomment this for bullets⌄⌄⌄⌄⌄⌄⌄⌄⌄⌄⌄⌄⌄⌄⌄⌄⌄⌄⌄⌄⌄⌄⌄⌄⌄⌄⌄⌄⌄⌄⌄⌄⌄⌄⌄⌄⌄⌄⌄⌄⌄⌄⌄
-        tower_projectiles.add(Tower_Projectiles("basic", self.rect.centerx, self.rect.centery, self.current_angle, self.damage))
-
     # determines when to switch back to the original tower state
     def unfire(self):
         if self.wait > self.cooldown/5 and self.shots_left != self.turrets-1:
             self.firing = False
+
+    # creates a bullet
+    def shoot(self):
+        #  ⌄⌄⌄⌄⌄⌄⌄⌄⌄⌄⌄⌄⌄⌄⌄⌄⌄⌄⌄⌄⌄⌄⌄⌄⌄⌄⌄⌄⌄⌄⌄⌄⌄⌄⌄⌄uncomment this for bullets⌄⌄⌄⌄⌄⌄⌄⌄⌄⌄⌄⌄⌄⌄⌄⌄⌄⌄⌄⌄⌄⌄⌄⌄⌄⌄⌄⌄⌄⌄⌄⌄⌄⌄⌄⌄⌄⌄⌄⌄⌄⌄⌄
+        tower_projectiles.add(Tower_Projectiles(self.tower, self.rect.centerx, self.rect.centery, self.current_angle, self.damage, self.id))
             
     # finds the closest enemy
     def find_closest_enemy(self) -> list[int]:
@@ -187,8 +192,7 @@ class Towers(pygame.sprite.Sprite):
 
         # makes sure there are enemies within tower range
         if self.closest_id != 0:
-            # gets a list format of the enemies group
-            enemy_list = enemies.sprites()
+            enemy_list = enemies.sprites() # gets a list format of the enemies group
 
             # finds the angle to targeted enemy
             self.rotation_angle = point_enemy(self.rect.centerx, self.rect.centery, int(enemy_list[self.closest_id-1].rect.centerx), int(enemy_list[self.closest_id-1].rect.centery))
@@ -196,10 +200,10 @@ class Towers(pygame.sprite.Sprite):
             # checks if firing cooldown is over and that the tower is rotated within 4 degrees of the enemy
             if self.current_angle >= self.rotation_angle-2 and self.current_angle <= self.rotation_angle+2:
                 if (self.wait >= self.cooldown):
-                    self.shots_left = self.turrets
+                    self.shots_left = self.turrets # resets ammo
                     enemy_death_info = self.shoot_target(True)
 
-                elif self.shots_left == self.turrets-1 and self.wait >= self.cooldown/10:
+                elif self.shots_left == self.turrets-1 and self.wait >= self.cooldown/5:
                     enemy_death_info = self.shoot_target(True)
 
         return enemy_death_info
@@ -222,8 +226,7 @@ class Towers(pygame.sprite.Sprite):
             self.shots_left -= 1
             self.wait = 0
 
-            if enemy_death_info != [0, 0]:
-                return enemy_death_info
+            return enemy_death_info
             
         return [0, 0]
 
@@ -241,7 +244,7 @@ class Towers(pygame.sprite.Sprite):
     def show_range(self):
         if self.upgrades_open:
             self.range_circle_scaled = pygame.transform.scale(self.range_circle, (self.range*2, self.range*2))
-            return self.range_circle_scaled, (self.x-self.range_circle_scaled.get_width()/2, self.y-self.range_circle_scaled.get_height()/2)
+            return self.range_circle_scaled, [self.x-self.range_circle_scaled.get_width()/2, self.y-self.range_circle_scaled.get_height()/2]
         return None
     
 

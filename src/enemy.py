@@ -14,16 +14,16 @@ class Enemies(pygame.sprite.Sprite):
     def __init__(self, *groups : Any):
         super().__init__()
 
-        self.enemy : str = groups[0]
+        self.enemy : EnemyType = groups[0]
 
         self.x : float = groups[1]
         self.y : float = groups[2]
 
         self.movement_vector = pygame.math.Vector2(0, 0)
 
-        info = EnemyConstants[self.enemy.upper()].value
+        info = EnemyConstants[self.enemy.name.upper()].value
 
-        self.image = enemy_images[EnemyType[self.enemy.upper()]][0]
+        self.image = enemy_images[self.enemy][0]
         self.current_image = self.image
 
         # makes a copy of the enemies image but red
@@ -41,6 +41,9 @@ class Enemies(pygame.sprite.Sprite):
         self.damage_frame = 0
 
         self.money_drop = round(4**self.tier)
+        self.damage_at_end = (2**self.tier)
+        if self.damage_at_end > 1:
+            self.damage_at_end /= 2
 
         # allows for custom money drops
         if len(info) > 5:
@@ -91,7 +94,7 @@ class Enemies(pygame.sprite.Sprite):
         # if enemy reaches end of map
         elif len(movement_nodes) == self.current_node:
             self.kill()
-            return (2**self.tier)/2 # returns the amount of damage to deal
+            return self.damage_at_end # returns the amount of damage to deal
         
         screen.blit(self.current_image, self.rect) # draws the enemies
         

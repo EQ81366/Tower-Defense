@@ -4,9 +4,9 @@ from pathlib import Path
 from typing import Mapping
 
 # finds the image paths
-def image_paths(type : str, sub_type : str|None):
+def image_paths(type : str, sub_type : Enum|None):
     if sub_type != None:
-        image_folder = Path(f"assets/{type}_images/{sub_type}")
+        image_folder = Path(f"assets/{type}_images/{sub_type.name.lower()}")
     else:
         image_folder = Path(f"assets/{type}_images")
 
@@ -22,11 +22,6 @@ class TowerType(Enum):
     BASIC = 0
     DOUBLE = 1
 
-# how many images to load for each tower
-class ImagesPerTower(Enum):
-    BASIC = 3
-    DOUBLE = 4
-
 # enum of all shop items
 class ShopType(Enum):
     SHOPUI = 0
@@ -35,7 +30,7 @@ class ShopType(Enum):
 # enum of all upgrades
 class UpgradeType(Enum):
     UPGRADEUI = 0
-    BASICUPGRADES = 1
+    UPGRADES = 1
 
 # loads all game images
 def load_images(retrieve : list[str]):
@@ -56,7 +51,7 @@ def load_images(retrieve : list[str]):
 
         # loads all the tower images
         for enum in TowerType:
-            tower_image_paths = sorted(image_paths("tower", str(enum.name).lower())) # list of all tower image paths
+            tower_image_paths = sorted(image_paths("tower", enum)) # list of all tower image paths
             temp_tower_list : list[pygame.Surface] = []
             
             # loads all images for a certain tower
