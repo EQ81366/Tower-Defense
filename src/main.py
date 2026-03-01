@@ -10,7 +10,7 @@ if __name__ == "__main__":
     from money import money_script
     from image_loader import TowerType, ShopType, UpgradeType, EnemyType
     from tower_projectiles import tower_projectiles
-    from mouse import mouse_info, clicked_and_released
+    from mouse import MouseInfo
     from fonts import font_30, font_50
     from map_sys import select_map, map
     from constants import stat_constants
@@ -112,6 +112,9 @@ if __name__ == "__main__":
             if event.type == pygame.QUIT:
                 LoadGame.running = False
 
+        mouse_xy = MouseInfo.get_mouse_xy()
+        pressed, LoadGame.clicked = MouseInfo.clicked_and_released(MouseInfo.get_left_click(), LoadGame.clicked)
+
         if LoadGame.game_screen != LoadGame.GameScreen.IN_GAME:
             LoadGame.screen.fill((255, 255, 255))
 
@@ -120,19 +123,16 @@ if __name__ == "__main__":
             pygame.draw.rect(LoadGame.screen, (100, 100, 100), LoadGame.border, 10, 25)
             pygame.draw.rect(LoadGame.screen, (180, 180, 180), LoadGame.settings_rect)
             LoadGame.screen.blit(LoadGame.play, LoadGame.play_location)
-            mouse = mouse_info()
-            pressed, LoadGame.clicked = clicked_and_released(mouse[1], LoadGame.clicked)
-
-            if LoadGame.play_rect.collidepoint(mouse[0]) and pressed:
+            
+            if LoadGame.play_rect.collidepoint(mouse_xy) and pressed:
                 LoadGame.game_screen = LoadGame.GameScreen.IN_GAME
-            elif LoadGame.settings_rect.collidepoint(mouse[0]) and pressed:
+            elif LoadGame.settings_rect.collidepoint(mouse_xy) and pressed:
                 LoadGame.game_screen = LoadGame.GameScreen.SETTINGS
 
         elif LoadGame.game_screen == LoadGame.GameScreen.SETTINGS:
             pygame.draw.rect(LoadGame.screen, (180, 180, 180), LoadGame.settings_rect)
-            mouse = mouse_info()
-            pressed, LoadGame.clicked = clicked_and_released(mouse[1], LoadGame.clicked)
-            if LoadGame.settings_rect.collidepoint(mouse[0]) and pressed:
+            
+            if LoadGame.settings_rect.collidepoint(mouse_xy) and pressed:
                 LoadGame.game_screen = LoadGame.GameScreen.MAIN_MENU
             # TODO: add settings
 

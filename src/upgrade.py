@@ -3,7 +3,7 @@ from typing import TYPE_CHECKING, Any
 from image_loader import load_images, UpgradeType, TowerType
 from upgrade_loader import load_upgrades
 from money import money_script
-from mouse import mouse_info
+from mouse import MouseInfo
 from fonts import font_30, font_25
 
 tower_images, upgrade_images = load_images(["tower", "upgrade"])
@@ -47,7 +47,8 @@ class Upgrades(pygame.sprite.Sprite):
         if open:
             money = money_script(None, 0)
             
-            mouse_xy, mouse_down = mouse_info()
+            mouse_xy = MouseInfo.get_mouse_xy()
+            mouse_down = MouseInfo.get_left_click()
 
             # makes the upgrades open on the opposite side of the selected tower
             if right_side:

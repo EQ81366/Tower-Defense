@@ -3,7 +3,7 @@ from typing import Any, TYPE_CHECKING
 from constants import TowerConstants, TargetingStates
 from image_loader import load_images, TowerType
 from tower_aiming import point_enemy
-from mouse import mouse_info, clicked_and_released
+from mouse import MouseInfo
 from enemy import enemies
 from tower_projectiles import Tower_Projectiles, tower_projectiles
 
@@ -231,8 +231,8 @@ class Towers(pygame.sprite.Sprite):
         return [0, 0]
 
     def open_upgrades(self, upgrade_rect : pygame.Rect):
-        mouse_xy, mouse_down = mouse_info()
-        pressed, self.clicked = clicked_and_released(mouse_down, self.clicked)
+        mouse_xy = MouseInfo.get_mouse_xy()
+        pressed, self.clicked = MouseInfo.clicked_and_released(MouseInfo.get_left_click(), self.clicked)
 
         if self.rect.collidepoint(mouse_xy) and pressed:
             self.upgrades_open = not self.upgrades_open

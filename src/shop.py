@@ -4,7 +4,7 @@ from constants import TowerConstants
 from image_loader import load_images, ShopType, TowerType
 from map_sys import show_map, map
 from money import money_script
-from mouse import mouse_info, clicked_and_released
+from mouse import MouseInfo
 from tower import Towers, towers
 from fonts import font_25, font_16
 
@@ -57,7 +57,7 @@ class Shop(pygame.sprite.Sprite):
 
     # checks whether the mouse is hovering over the shop panel and changes the panel accordingly
     def hovering(self):
-        mouse_xy = mouse_info()[0]
+        mouse_xy = MouseInfo.get_mouse_xy()
 
         if self.rect.collidepoint(mouse_xy):
             self.open = True
@@ -76,7 +76,8 @@ class Shop(pygame.sprite.Sprite):
         if open:
             money = money_script(None, 0)
 
-            mouse_xy, mouse_down = mouse_info()
+            mouse_down = MouseInfo.get_left_click()
+            mouse_xy = MouseInfo.get_mouse_xy()
         
             screen.blit(self.image, self.rect)
             screen.blit(self.text, (self.rect.centerx-self.text.get_width()/2, self.rect.centery+self.rect.height/2))
@@ -98,7 +99,8 @@ class Shop(pygame.sprite.Sprite):
         
     # if the user bought a tower from the shop, it will follow the mouse until placed
     def place_tower(self):
-        mouse_xy, mouse_down = mouse_info()
+        mouse_down = MouseInfo.get_left_click()
+        mouse_xy = MouseInfo.get_mouse_xy()
 
         self.rect.centerx = mouse_xy[0]
         self.rect.centery = mouse_xy[1]
@@ -118,7 +120,7 @@ class Shop(pygame.sprite.Sprite):
                 break
         
         # waits to place tower until mouse down and not touching track, it then waits for mouse release to place
-        pressed, self.clicked = clicked_and_released(mouse_down, self.clicked)
+        pressed, self.clicked = MouseInfo.clicked_and_released(mouse_down, self.clicked)
         if pressed and not colliding and not overlapping_tower:
             towers.add(Towers(self.shop, self.rect.centerx, self.rect.centery))
             self.rect.centerx = self.original_x
@@ -131,7 +133,7 @@ class Shop(pygame.sprite.Sprite):
     
     def show_stats(self, open : bool, tower_stats : list[pygame.Surface]|None):
         if open:
-            mouse_xy = mouse_info()[0]
+            mouse_xy = MouseInfo.get_mouse_xy()
 
             self.rect.bottomleft = mouse_xy
             screen.blit(self.image, self.rect)
