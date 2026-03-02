@@ -1,11 +1,12 @@
 import pygame, math
 from typing import Any, TYPE_CHECKING
 from constants import TowerConstants, TargetingStates
-from image_loader import load_images, TowerType
+from image_loader import load_images, TowerType, get_resource_path
 from tower_aiming import point_enemy
 from mouse import mouse_info, clicked_and_released
 from enemy import enemies
 from tower_projectiles import Tower_Projectiles, tower_projectiles
+from pathlib import Path
 
 tower_images = load_images(["tower"])[0]
 
@@ -13,7 +14,7 @@ screen = pygame.display.set_mode((0, 0)) # in pixels
 
 class Towers(pygame.sprite.Sprite):
     id = 0
-    range_circle = pygame.image.load("assets/circle.png")
+    range_circle = pygame.image.load(get_resource_path(Path("assets/circle.png")))
 
     def __init__(self, *groups : Any):
         super().__init__()

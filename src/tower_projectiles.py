@@ -2,14 +2,15 @@ import pygame, math, numpy
 from typing import Any, TYPE_CHECKING
 from enemy import enemies
 from money import money_script
-from image_loader import TowerType
+from image_loader import TowerType, get_resource_path
+from pathlib import Path
 
 screen = pygame.display.set_mode((0, 0)) # in pixels
 
 
 # defines the Tower_Projectiles class
 class Tower_Projectiles(pygame.sprite.Sprite):
-    image = pygame.image.load("assets/b.png")
+    image = pygame.image.load(get_resource_path(Path("assets/b.png")))
     def __init__(self, *groups : Any):    
         super().__init__()
 

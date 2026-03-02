@@ -1,7 +1,17 @@
-import pygame
+import pygame, sys
 from enum import Enum
 from pathlib import Path
 from typing import Mapping
+
+def get_resource_path(relative_path : Path):
+    """Get absolute path to resource, works for dev and for PyInstaller"""
+    try:
+        # PyInstaller creates a temp folder and stores path in _MEIPASS
+        base_path = Path(sys._MEIPASS) # type: ignore
+    except Exception:
+        base_path = Path(".").absolute()
+
+    return base_path / relative_path
 
 # finds the image paths
 def image_paths(type : str, sub_type : Enum|None):
@@ -9,6 +19,8 @@ def image_paths(type : str, sub_type : Enum|None):
         image_folder = Path(f"assets/{type}_images/{sub_type.name.lower()}")
     else:
         image_folder = Path(f"assets/{type}_images")
+
+    image_folder = get_resource_path(image_folder)
 
     images = list(image_folder.glob("*.png"))
     return images
@@ -38,6 +50,7 @@ def load_images(retrieve : list[str]):
 
     if retrieve.count("enemy") > 0:
         enemy_image_paths = sorted(image_paths("enemy", None)) # list of all enemy image paths
+        print(enemy_image_paths)
         enemy_list : dict[Enum, list[pygame.Surface]] = {} # dict of all enemy images
 
         # loads all the enemy images
