@@ -30,7 +30,7 @@ jobs:
 
       - name: Build executable
         run: |
-          pyinstaller --onefile --name tower-defense src/main.py
+          python -m PyInstaller main.spec
 
       - name: Upload artifact
         uses: actions/upload-artifact@v4
