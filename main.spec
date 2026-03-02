@@ -2,12 +2,17 @@
 
 block_cipher = None
 
+from PyInstaller.utils.hooks import collect_submodules, collect_dynamic_libs
+
+hiddenimports = collect_submodules('psutil')
+binaries = collect_dynamic_libs('psutil')
+
 a = Analysis(
-    ['src/main.py'],          # entry point
-    pathex=['src'],           # include entire src/ directory
-    binaries=[],
+    ['src/main.py'],
+    pathex=['src'],
+    binaries=binaries,
     datas=[],
-    hiddenimports=[],
+    hiddenimports=hiddenimports,
     hookspath=[],
     hooksconfig={},
     runtime_hooks=[],
