@@ -2,83 +2,95 @@ import pygame
 from enum import Enum
 from pathlib import Path
 from typing import Mapping
+import sys
+import os
+
+
+# Resolve paths correctly when running under PyInstaller
+def resource_path(relative_path: str) -> str:
+    if hasattr(sys, "_MEIPASS"):
+        return os.path.join(sys._MEIPASS, relative_path) # type: ignore
+    return relative_path
+
 
 # finds the image paths
-def image_paths(type : str, sub_type : Enum|None):
-    if sub_type != None:
-        image_folder = Path(f"assets/{type}_images/{sub_type.name.lower()}")
+def image_paths(type: str, sub_type: Enum | None):
+    if sub_type is not None:
+        folder = f"assets/{type}_images/{sub_type.name.lower()}"
     else:
-        image_folder = Path(f"assets/{type}_images")
+        folder = f"assets/{type}_images"
 
-    images = list(image_folder.glob("*.png"))
-    return images
+    image_folder = Path(resource_path(folder))
+    return list(image_folder.glob("*.png"))
+
 
 # enum of all enemies
 class EnemyType(Enum):
     BASIC = 0
+
 
 # enum of all towers
 class TowerType(Enum):
     BASIC = 0
     DOUBLE = 1
 
+
 # enum of all shop items
 class ShopType(Enum):
     SHOPUI = 0
     TOWERUI = 1
+
 
 # enum of all upgrades
 class UpgradeType(Enum):
     UPGRADEUI = 0
     UPGRADES = 1
 
+
 # loads all game images
-def load_images(retrieve : list[str]):
-    image_list : list[Mapping[Enum, list[pygame.Surface]]] = []
+def load_images(retrieve: list[str]):
+    image_list: list[Mapping[Enum, list[pygame.Surface]]] = []
 
-    if retrieve.count("enemy") > 0:
-        enemy_image_paths = sorted(image_paths("enemy", None)) # list of all enemy image paths
-        enemy_list : dict[Enum, list[pygame.Surface]] = {} # dict of all enemy images
+    if "enemy" in retrieve:
+        enemy_image_paths = sorted(image_paths("enemy", None))
+        enemy_list: dict[Enum, list[pygame.Surface]] = {}
 
-        # loads all the enemy images
         for enum in EnemyType:
-            enemy_list[enum] = [pygame.image.load(enemy_image_paths[enum.value])]
+            path = resource_path(str(enemy_image_paths[enum.value]))
+            enemy_list[enum] = [pygame.image.load(path)]
 
         image_list.append(enemy_list)
 
-    if retrieve.count("tower") > 0:
-        tower_list : dict[Enum, list[pygame.Surface]] = {} # dict of all tower images
+    if "tower" in retrieve:
+        tower_list: dict[Enum, list[pygame.Surface]] = {}
 
-        # loads all the tower images
         for enum in TowerType:
-            tower_image_paths = sorted(image_paths("tower", enum)) # list of all tower image paths
-            temp_tower_list : list[pygame.Surface] = []
-            
-            # loads all images for a certain tower
-            temp_tower_list = [pygame.image.load(tower_image_paths[i]) for i in range(len(tower_image_paths))]
-            
-            tower_list[enum] = temp_tower_list # adds all the 3 tower images in one dict
-        
-        image_list.append(tower_list)
-        
-    if retrieve.count("shop") > 0:
-        shop_image_paths = sorted(image_paths("shop", None)) # list of all shop image paths
-        shop_list : dict[Enum, list[pygame.Surface]] = {} # dict of all shop images
+            tower_image_paths = sorted(image_paths("tower", enum))
+            tower_list[enum] = [
+                pygame.image.load(resource_path(str(p)))
+                for p in tower_image_paths
+            ]
 
-        # loads all the shop images
+        image_list.append(tower_list)
+
+    if "shop" in retrieve:
+        shop_image_paths = sorted(image_paths("shop", None))
+        shop_list: dict[Enum, list[pygame.Surface]] = {}
+
         for enum in ShopType:
-            shop_list[enum] = [pygame.image.load(shop_image_paths[enum.value])]
+            path = resource_path(str(shop_image_paths[enum.value]))
+            shop_list[enum] = [pygame.image.load(path)]
 
         image_list.append(shop_list)
 
-    if retrieve.count("upgrade") > 0:
-        upgrade_image_paths = sorted(image_paths("upgrade", None)) # list of all upgrade image paths
-        upgrade_list : dict[Enum, list[pygame.Surface]] = {} # dict of all upgrade images
+    if "upgrade" in retrieve:
+        upgrade_image_paths = sorted(image_paths("upgrade", None))
+        upgrade_list: dict[Enum, list[pygame.Surface]] = {}
 
-        # loads all the upgrade images
         for enum in UpgradeType:
-            upgrade_list[enum] = [pygame.image.load(upgrade_image_paths[enum.value])]
-        
+            path = resource_path(str(upgrade_image_paths[enum.value]))
+            upgrade_list[enum] = [pygame.image.load(path)]
+
         image_list.append(upgrade_list)
 
     return image_list
