@@ -3,7 +3,7 @@ name: Build & Release Multi‑Platform Executables
 on:
   push:
     branches:
-      - dev
+      - deploy
 
 jobs:
   build:
