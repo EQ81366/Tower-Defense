@@ -1,4 +1,4 @@
-import pygame, sys
+import pygame, sys, os
 from enum import Enum
 from pathlib import Path
 from typing import Mapping
@@ -9,9 +9,9 @@ def get_resource_path(relative_path : Path):
         # PyInstaller creates a temp folder and stores path in _MEIPASS
         base_path = Path(sys._MEIPASS) # type: ignore
     except Exception:
-        base_path = Path(".").absolute()
+        base_path = os.path.abspath(".")
 
-    return base_path / relative_path
+    return Path(os.path.join(base_path, relative_path))
 
 # finds the image paths
 def image_paths(type : str, sub_type : Enum|None):
