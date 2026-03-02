@@ -1,33 +1,48 @@
 # main.spec
 
 from PyInstaller.utils.hooks import collect_submodules, collect_dynamic_libs
-import pkgutil
-import sys
 
 block_cipher = None
 
-# Collect ALL installed modules
-all_hiddenimports = []
-all_binaries = []
+# Add all dependencies your project actually uses.
+DEPENDENCIES = [
+    "psutil",
+    "pygame",
+    "numpy",
+]
 
-for module in pkgutil.iter_modules():
-    name = module.name
-    try:
-        all_hiddenimports += collect_submodules(name)
-        all_binaries += collect_dynamic_libs(name)
-    except Exception:
-        pass  # Some modules may not have dynamic libs or submodules
+hiddenimports = []
+binaries = []
+
+# Collect submodules + dynamic libraries for each dependency.
+for dep in DEPENDENCIES:
+    hiddenimports += collect_submodules(dep)
+    binaries += collect_dynamic_libs(dep)
+
+# Exclude Python's internal test modules (these contain invalid encodings).
+EXCLUDED_MODULES = [
+    "test",
+    "tkinter.test",
+    "distutils.tests",
+    "lib2to3.tests",
+    "unittest.test",
+]
+
+hiddenimports = [
+    m for m in hiddenimports
+    if not any(m.startswith(ex) for ex in EXCLUDED_MODULES)
+]
 
 a = Analysis(
-    ['src/main.py'],          # entry point
-    pathex=['src'],           # include entire src/ directory
-    binaries=all_binaries,
+    ['src/main.py'],          # Entry point
+    pathex=['src'],           # Include your entire src/ directory
+    binaries=binaries,
     datas=[],
-    hiddenimports=all_hiddenimports,
+    hiddenimports=hiddenimports,
     hookspath=[],
     hooksconfig={},
     runtime_hooks=[],
-    excludes=[],
+    excludes=EXCLUDED_MODULES,
     noarchive=False,
 )
 
