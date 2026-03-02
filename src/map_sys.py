@@ -1,4 +1,6 @@
 import pygame
+from image_loader import get_resource_path
+from pathlib import Path
 
 def select_map():
     global current_map
@@ -14,7 +16,9 @@ def show_map():
 # the map system
 def map(map : str):
     # loads the map based off of selected map
-    path = pygame.image.load("assets/map_images/"+map+".png")
+    image = Path("assets/map_images/{map}.png")
+    image = get_resource_path(image)
+    path = pygame.image.load(image)
     # defines movement_nodes so it doesn't break if given an invalid map name
     movement_nodes = []
     map_offsets = (0, 0)
