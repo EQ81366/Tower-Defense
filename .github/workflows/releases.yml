@@ -49,8 +49,12 @@ jobs:
           # Copy assets
           cp -r assets/* "$PKG_DIR/assets/"
 
-          # Zip it
-          zip -r "${PKG_DIR}.zip" "$PKG_DIR"
+          # Zip depending on OS
+          if [[ "$OSNAME" == "windows-latest" ]]; then
+            powershell.exe Compress-Archive -Path "$PKG_DIR" -DestinationPath "${PKG_DIR}.zip"
+          else
+            zip -r "${PKG_DIR}.zip" "$PKG_DIR"
+          fi
 
       - name: Upload artifact
         uses: actions/upload-artifact@v4
