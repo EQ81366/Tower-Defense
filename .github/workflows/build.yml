@@ -23,12 +23,12 @@ jobs:
 
       - name: Install dependencies
         run: |
-          python -m pip install --upgrade pip
+          python3 -m pip install --upgrade pip
           pip install -r requirements.txt
 
       - name: Run script for 3 seconds
         run: |
-          python src/main.py &
+          python3 src/main.py &
           PID=$!
           sleep 3
           kill $PID || true
