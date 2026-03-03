@@ -50,7 +50,6 @@ def load_images(retrieve : list[str]):
 
     if retrieve.count("enemy") > 0:
         enemy_image_paths = sorted(image_paths("enemy", None)) # list of all enemy image paths
-        print(enemy_image_paths)
         enemy_list : dict[Enum, list[pygame.Surface]] = {} # dict of all enemy images
 
         # loads all the enemy images
