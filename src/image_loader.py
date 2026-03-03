@@ -20,9 +20,7 @@ def image_paths(type : str, sub_type : Enum|None):
     else:
         image_folder = Path(f"assets/{type}_images")
 
-    print(image_folder)
     image_folder = get_resource_path(image_folder)
-    print(image_folder)
 
     images = list(image_folder.glob("*.png"))
     return images
@@ -52,7 +50,6 @@ def load_images(retrieve : list[str]):
 
     if retrieve.count("enemy") > 0:
         enemy_image_paths = sorted(image_paths("enemy", None)) # list of all enemy image paths
-        print(enemy_image_paths)
         enemy_list : dict[Enum, list[pygame.Surface]] = {} # dict of all enemy images
 
         # loads all the enemy images
