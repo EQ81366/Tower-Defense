@@ -6,7 +6,7 @@ from map_sys import show_map, map
 from money import money_script
 from mouse import mouse_info, clicked_and_released
 from tower import Towers, towers
-from fonts import font_25, font_16
+from fonts import FONT_25, FONT_16
 
 tower_images, shop_images = load_images(["tower", "shop"])
 
@@ -37,14 +37,14 @@ class Shop(pygame.sprite.Sprite):
             tower_stats = TowerConstants[self.shop.name].value
             self.cost = int(tower_stats[7])
 
-            self.text = font_25.render(f'{self.shop.name.capitalize()} ${self.cost}', True, "black")
+            self.text = FONT_25.render(f'{self.shop.name.capitalize()} ${self.cost}', True, "black")
 
             self.description = [
-                font_16.render(f'{self.shop.name.capitalize()}:', True, "black"),
-                font_16.render(f'Damage: {tower_stats[3]}', True, "black"),
-                font_16.render(f'Cooldown: {tower_stats[4]}', True, "black"),
-                font_16.render(f'Range: {tower_stats[5]}', True, "black"),
-                font_16.render(f'R-Speed:  {tower_stats[6]}', True, "black")
+                FONT_16.render(f'{self.shop.name.capitalize()}:', True, "black"),
+                FONT_16.render(f'Damage: {tower_stats[3]}', True, "black"),
+                FONT_16.render(f'Cooldown: {tower_stats[4]}', True, "black"),
+                FONT_16.render(f'Range: {tower_stats[5]}', True, "black"),
+                FONT_16.render(f'R-Speed:  {tower_stats[6]}', True, "black")
             ]
 
             self.clicked = False
@@ -135,7 +135,7 @@ class Shop(pygame.sprite.Sprite):
 
             self.rect.bottomleft = mouse_xy
             screen.blit(self.image, self.rect)
-            if tower_stats != None:
+            if tower_stats is not None:
                 for i in range(len(tower_stats)):
                     screen.blit(tower_stats[i], (self.rect.topleft[0]+10, self.rect.topleft[1]+5+17*i))
 

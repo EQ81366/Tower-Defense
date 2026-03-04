@@ -1,19 +1,19 @@
 import pygame
 from enum import Enum
-from fonts import font_20
+from fonts import FONT_20
 from image_loader import TowerType
 #from upgrades import upgrades
 
 pygame.init()
 
 def render_text(input : str):
-    return font_20.render(input, True, "black")
+    return FONT_20.render(input, True, "black")
 
 def upgrades(type : TowerType):
     upgrade_images : list[list[pygame.Surface]] = [[]]
     upgrade_info : list[list[int|str|float]] = [[]]
 
-    if type == TowerType.BASIC:
+    if type is TowerType.BASIC:
         upgrade_images = [
             [render_text("Faster Reload:"), render_text("shoots 20% faster")],
             [render_text("Oiled Cogs:"), render_text("turns 20% faster")],
@@ -31,7 +31,7 @@ def upgrades(type : TowerType):
             [300, "rotation_speed", 1.35, 2.2]
         ]
 
-    elif type == TowerType.DOUBLE:
+    elif type is TowerType.DOUBLE:
         upgrade_images = [
             [render_text("Better Goggles:"), render_text("30% more range")],
             [render_text("Higher Caliber:"), render_text("deals 25% more damage")],
@@ -49,10 +49,8 @@ def upgrades(type : TowerType):
 
     return upgrade_images, upgrade_info
 
-def load_upgrades():
-    upgrade_list : dict[Enum, tuple[list[list[pygame.Surface]], list[list[int|str|float]]]] = {}
-
-    for enum in TowerType:
-        upgrade_list[enum] = upgrades(enum)
-
-    return upgrade_list
+def load_upgrades() -> dict[Enum, tuple[list[list[pygame.Surface]], list[list[int | str | float]]]]:
+    return {
+        enum: upgrades(enum)
+        for enum in TowerType
+    }
