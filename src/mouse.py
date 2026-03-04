@@ -12,5 +12,5 @@ def clicked_and_released(mouse_down : bool, clicked : bool):
         return False, True
     elif not mouse_down and clicked:
         return True, False
-    
-    return False, False
+    else:
+        return False, False

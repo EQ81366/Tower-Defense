@@ -8,7 +8,5 @@ def money_script(add : bool|None, amount : int):
         money += amount
     elif not add:
         money -= amount
-    else:
-        pass
-
+    
     return money

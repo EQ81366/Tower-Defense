@@ -26,11 +26,11 @@ class Tower_Projectiles(pygame.sprite.Sprite):
         self.damage = groups[4]
 
         # checks which projectile was spawned
-        if self.projectile == TowerType.BASIC:
+        if self.projectile is TowerType.BASIC:
             #self.image = pygame.image.load("assets/b.png")
             self.speed = 100
             self.pierce = 2 # pierce = hp
-        elif self.projectile == TowerType.DOUBLE:
+        elif self.projectile is TowerType.DOUBLE:
             #self.image = pygame.image.load("assets/b.png")
             self.speed = 200
             self.pierce = 2 # pierce = hp

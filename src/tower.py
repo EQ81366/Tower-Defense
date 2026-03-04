@@ -117,7 +117,7 @@ class Towers(pygame.sprite.Sprite):
         self.closest_id = 0
 
         # targets the most "efficient" enemy; whichever enemy is fastest to shoot
-        if self.targeting_mode == TargetingStates.EFFICIENT:
+        if self.targeting_mode is TargetingStates.EFFICIENT:
             dr = 99999
             lowest_dr = dr
             for sprite in enemies:
@@ -135,7 +135,7 @@ class Towers(pygame.sprite.Sprite):
                     self.closest_id = x
 
         # targets closest enemy
-        elif self.targeting_mode == TargetingStates.CLOSE:
+        elif self.targeting_mode is TargetingStates.CLOSE:
             distance = 99999
             closest_distance = distance
             
@@ -151,7 +151,7 @@ class Towers(pygame.sprite.Sprite):
                     self.closest_id = x
 
         # targets the furthest most enemy in range
-        elif self.targeting_mode == TargetingStates.FIRST:
+        elif self.targeting_mode is TargetingStates.FIRST:
             for sprite in enemies:
                 dx : int = int(sprite.rect.centerx) - self.rect.centerx
                 dy : int = int(sprite.rect.centery) - self.rect.centery
@@ -164,7 +164,7 @@ class Towers(pygame.sprite.Sprite):
                     break
 
         # targets the furthest back enemy in range
-        elif self.targeting_mode == TargetingStates.LAST:
+        elif self.targeting_mode is TargetingStates.LAST:
             for sprite in enemies:
                 dx : int = int(sprite.rect.centerx) - self.rect.centerx
                 dy : int = int(sprite.rect.centery) - self.rect.centery
@@ -176,7 +176,7 @@ class Towers(pygame.sprite.Sprite):
                     self.closest_id = x
 
         # targets the enemy with the most hp
-        elif self.targeting_mode == TargetingStates.STRONG:
+        elif self.targeting_mode is TargetingStates.STRONG:
             e_hp = 0
             highest_e_hp = e_hp
             for sprite in enemies:

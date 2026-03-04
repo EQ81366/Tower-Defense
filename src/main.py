@@ -11,7 +11,7 @@ if __name__ == "__main__":
     from image_loader import TowerType, ShopType, UpgradeType, EnemyType
     from tower_projectiles import tower_projectiles
     from mouse import mouse_info, clicked_and_released
-    from fonts import font_30, font_50
+    from fonts import FONT_30, FONT_50
     from map_sys import select_map, map
     from constants import stat_constants
 
@@ -82,7 +82,7 @@ if __name__ == "__main__":
         range_circle : tuple[pygame.Surface, list[float]] | None = None
         tower_selected : TowerType | None = None
         
-        play = font_50.render("Play", True, "black")
+        play = FONT_50.render("Play", True, "black")
         play_location = [int(screen.get_width()/2-play.get_width()/2), int(screen.get_height()/2-play.get_height())]
         play_rect = pygame.Rect(play_location[0]-100, play_location[1]-10, play.get_width()+200, play.get_height()+20)
         border = play_rect.inflate(20, 20)
@@ -90,9 +90,9 @@ if __name__ == "__main__":
         settings_rect = pygame.Rect(10, 10, 50, 50)
 
     def stats(money : int, health_points : int):
-        text = font_30.render(f'Money: ${money}', True, "black")
+        text = FONT_30.render(f'Money: ${money}', True, "black")
         LoadGame.screen.blit(text, (5, 0))
-        text = font_30.render(f'Health: {health_points}', True, "black")
+        text = FONT_30.render(f'Health: {health_points}', True, "black")
         LoadGame.screen.blit(text, (5, 35))
 
 
@@ -109,13 +109,13 @@ if __name__ == "__main__":
     # and so begins the main script
     while LoadGame.running:
         for event in pygame.event.get():
-            if event.type == pygame.QUIT:
+            if event.type is pygame.QUIT:
                 LoadGame.running = False
 
-        if LoadGame.game_screen != LoadGame.GameScreen.IN_GAME:
+        if LoadGame.game_screen is not LoadGame.GameScreen.IN_GAME:
             LoadGame.screen.fill((255, 255, 255))
 
-        if LoadGame.game_screen == LoadGame.GameScreen.MAIN_MENU:
+        if LoadGame.game_screen is LoadGame.GameScreen.MAIN_MENU:
             pygame.draw.rect(LoadGame.screen, "gray", LoadGame.play_rect, border_radius=15)
             pygame.draw.rect(LoadGame.screen, (100, 100, 100), LoadGame.border, 10, 25)
             pygame.draw.rect(LoadGame.screen, (180, 180, 180), LoadGame.settings_rect)
@@ -128,7 +128,7 @@ if __name__ == "__main__":
             elif LoadGame.settings_rect.collidepoint(mouse[0]) and pressed:
                 LoadGame.game_screen = LoadGame.GameScreen.SETTINGS
 
-        elif LoadGame.game_screen == LoadGame.GameScreen.SETTINGS:
+        elif LoadGame.game_screen is LoadGame.GameScreen.SETTINGS:
             pygame.draw.rect(LoadGame.screen, (180, 180, 180), LoadGame.settings_rect)
             mouse = mouse_info()
             pressed, LoadGame.clicked = clicked_and_released(mouse[1], LoadGame.clicked)
@@ -136,7 +136,7 @@ if __name__ == "__main__":
                 LoadGame.game_screen = LoadGame.GameScreen.MAIN_MENU
             # TODO: add settings
 
-        elif LoadGame.game_screen == LoadGame.GameScreen.IN_GAME:
+        elif LoadGame.game_screen is LoadGame.GameScreen.IN_GAME:
             LoadGame.screen.fill((50, 200, 20)) # background
             LoadGame.screen.blit(LoadGame.path, (-4, 200)) # map
 
@@ -164,7 +164,7 @@ if __name__ == "__main__":
                 sprite.rotate()
                 LoadGame.open_list += [sprite.open_upgrades(LoadGame.upgrade_rect)]
                 range_circle_test = sprite.show_range()
-                if range_circle_test != None:
+                if range_circle_test is not None:
                     LoadGame.range_circle = range_circle_test
                     LoadGame.screen.blit(LoadGame.range_circle[0], LoadGame.range_circle[1])
                     LoadGame.tower_selected = sprite.tower
@@ -173,7 +173,7 @@ if __name__ == "__main__":
                     if sprite.x > 640:
                         right_side = False
 
-            #if LoadGame.range_circle != None:
+            #if LoadGame.range_circle is not None:
                 
 
             # -------------------------------------------------------------- #
@@ -196,11 +196,11 @@ if __name__ == "__main__":
             LoadGame.upgrade_info = [0, "", 0.0]
             open_index = next((i for i, open in enumerate(LoadGame.open_list) if open), None) # if True is found in open_list, returns index of True, else returns None
             for sprite in upgrades:
-                if sprite.upgrade == UpgradeType.UPGRADEUI:
+                if sprite.upgrade is UpgradeType.UPGRADEUI:
                     sprite.hovering(open, right_side) # opens and closes upgrade menu
                     LoadGame.upgrade_rect = sprite.rect
-                elif LoadGame.tower_selected != None:
-                    if open_index != None:
+                elif LoadGame.tower_selected is not None:
+                    if open_index is not None:
                         upgrades_bought = tower_list[open_index].upgrades_bought[tower_list[open_index].tier] # gets the upgrades bought for the tier of the currently selected tower
                         LoadGame.upgrade_info = sprite.upgrades(open, LoadGame.tower_selected, tower_tier, right_side, upgrades_bought)
                     else:
@@ -208,7 +208,7 @@ if __name__ == "__main__":
 
             LoadGame.upgrading = str(LoadGame.upgrade_info[1]) # the stat being upgraded
 
-            if open_index != None and LoadGame.upgrading != "":
+            if open_index is not None and LoadGame.upgrading != "":
                 # subtracts the cost of the money from your money
                 upgrade_cost : int = int(LoadGame.upgrade_info[0])
                 money_script(False, upgrade_cost)
@@ -229,7 +229,7 @@ if __name__ == "__main__":
             LoadGame.hovering_list.clear()
             for sprite in shop:
                 # only runs hovering function for the panel type in the shop group
-                if sprite.shop == ShopType.SHOPUI:
+                if sprite.shop is ShopType.SHOPUI:
                     open = bool(sprite.hovering())
                 
                 elif sprite.tower: # checks if the shop item is a tower
@@ -245,7 +245,7 @@ if __name__ == "__main__":
                         if LoadGame.placing_tower:
                             LoadGame.tower_being_bought = temp_pkg[4]
                         
-                    if LoadGame.tower_being_bought == sprite.shop and LoadGame.placing_tower:
+                    if LoadGame.tower_being_bought is sprite.shop and LoadGame.placing_tower:
                         LoadGame.placing_tower = bool(sprite.place_tower())
 
                     if not LoadGame.placing_tower:

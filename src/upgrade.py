@@ -4,7 +4,7 @@ from image_loader import load_images, UpgradeType, TowerType
 from upgrade_loader import load_upgrades
 from money import money_script
 from mouse import mouse_info, clicked_and_released
-from fonts import font_30, font_25
+from fonts import FONT_30, FONT_25
 
 tower_images, upgrade_images = load_images(["tower", "upgrade"])
 
@@ -61,9 +61,9 @@ class Upgrades(pygame.sprite.Sprite):
             screen.blit(images[1], (self.rect.x-(images[1].get_width()-self.rect.width)/2, 80-images[1].get_height()/2))
 
             # shows the selected tower's name and tier
-            text = font_30.render(tower.name.capitalize(), True, "black")
+            text = FONT_30.render(tower.name.capitalize(), True, "black")
             screen.blit(text, (self.rect.x-(text.get_width()-self.rect.width)/2, 160))
-            text = font_25.render(f'Tier: {tower_tier}', True, "black")
+            text = FONT_25.render(f'Tier: {tower_tier}', True, "black")
             screen.blit(text, (self.rect.x-(text.get_width()-self.rect.width)/2, 193))
 
             tower_tier += 1 # for upgrade info

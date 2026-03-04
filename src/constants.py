@@ -1,12 +1,14 @@
 from enum import Enum
 
+STARTING_MONEY = 10000000
+HIT_POINTS = 100
+
 def stat_constants():
-    starting_money = 10000000
-    hp = 100
+    global STARTING_MONEY, HIT_POINTS
 
     return [
-        starting_money,
-        hp
+        STARTING_MONEY,
+        HIT_POINTS
     ]
 
 class EnemyConstants(Enum):
