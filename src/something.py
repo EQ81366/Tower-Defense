@@ -5,11 +5,14 @@ running = True
 
 screen = pygame.display.set_mode((1280, 720))
 image = pygame.image.load("assets/enemy_images/1_basic_enemy.png")
-#image = pygame.image.load("assets/enemy_images/b_bullet.png")
+# image = pygame.image.load("assets/enemy_images/b_bullet.png")
 
 damage_image = image.copy()
 with pygame.PixelArray(damage_image) as pixel_array:
-    pixel_array.replace(image.get_at((int(image.get_width()/2), int(image.get_height()/2))), (255, 0, 0))
+    pixel_array.replace(
+        image.get_at((int(image.get_width() / 2), int(image.get_height() / 2))),
+        (255, 0, 0),
+    )
 
 
 while running:

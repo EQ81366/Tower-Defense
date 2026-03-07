@@ -8,16 +8,17 @@ enemy_images = load_images(["enemy"])[0]
 
 movement_nodes = map(show_map())[1]
 
-screen = pygame.display.set_mode((0, 0)) # in pixels
+screen = pygame.display.set_mode((0, 0))  # in pixels
+
 
 class Enemies(pygame.sprite.Sprite):
-    def __init__(self, *groups : Any):
+    def __init__(self, *groups: Any):
         super().__init__()
 
-        self.enemy : EnemyType = groups[0]
+        self.enemy: EnemyType = groups[0]
 
-        self.x : float = groups[1]
-        self.y : float = groups[2]
+        self.x: float = groups[1]
+        self.y: float = groups[2]
 
         self.movement_vector = pygame.math.Vector2(0, 0)
 
@@ -29,19 +30,27 @@ class Enemies(pygame.sprite.Sprite):
         # makes a copy of the enemies image but red
         self.damage_image = self.image.copy()
         with pygame.PixelArray(self.damage_image) as pixel_array:
-            pixel_array.replace(self.damage_image.get_at((int(self.damage_image.get_width()/2), int(self.damage_image.get_height()/2))), (255, 0, 0))
+            pixel_array.replace(
+                self.damage_image.get_at(
+                    (
+                        int(self.damage_image.get_width() / 2),
+                        int(self.damage_image.get_height() / 2),
+                    )
+                ),
+                (255, 0, 0),
+            )
 
         self.tier = int(info[1])
         self.speed = float(info[2])
         self.hp = int(info[3])
         self.max_hp = self.hp
-        self.weight = int(info[4]) # the more weight the less it's stunned with each hit
+        self.weight = int(info[4])  # the more weight the less it's stunned with each hit
 
-        self.damage_frame_length = int(30/self.weight)
+        self.damage_frame_length = int(30 / self.weight)
         self.damage_frame = 0
 
         self.money_drop = round(4**self.tier)
-        self.damage_at_end = (2**self.tier)
+        self.damage_at_end = 2**self.tier
         if self.damage_at_end > 1:
             self.damage_at_end /= 2
 
@@ -67,7 +76,7 @@ class Enemies(pygame.sprite.Sprite):
 
             magnitude = math.hypot(dx, dy)
 
-            self.movement_vector = pygame.math.Vector2(dx/magnitude * self.speed, dy/magnitude * self.speed)
+            self.movement_vector = pygame.math.Vector2(dx / magnitude * self.speed, dy / magnitude * self.speed)
 
             self.x += self.movement_vector.x
             self.y += self.movement_vector.y
@@ -90,17 +99,16 @@ class Enemies(pygame.sprite.Sprite):
             elif (dx <= 0 and self.rect.centerx <= destination[0]) and (dy <= 0 and self.rect.centery <= destination[1]):
                 at_destination()
 
-
         # if enemy reaches end of map
         elif len(movement_nodes) == self.current_node:
             self.kill()
-            return self.damage_at_end # returns the amount of damage to deal
-        
-        screen.blit(self.current_image, self.rect) # draws the enemies
-        
+            return self.damage_at_end  # returns the amount of damage to deal
+
+        screen.blit(self.current_image, self.rect)  # draws the enemies
+
         return 0
-        
-    def damage(self, damage : float) -> list[int]:
+
+    def damage(self, damage: float) -> list[int]:
         if self.damage_frame <= 0:
             self.hp -= damage
             self.damage_frame = self.damage_frame_length
@@ -108,14 +116,14 @@ class Enemies(pygame.sprite.Sprite):
             if not self.hp > 0:
                 self.kill()
                 return [self.tier, self.money_drop]
-        
+
         return [0, 0]
-    
-    
+
+
 if TYPE_CHECKING:
     Type = pygame.sprite.Group[Enemies]
 else:
     Type = pygame.sprite.Group
 
 # defines the enemies group
-enemies : Type = pygame.sprite.Group()
+enemies: Type = pygame.sprite.Group()
