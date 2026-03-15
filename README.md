@@ -1,6 +1,11 @@
 # Tower-Defense
 
-**WARNING:** You will not be able to play this game without having Python and Pygame installed
+## How To Play
+1. Go to the releases tab and click tags
+2. Install for your OS
+3. Run the executable
+
+**WARNING:** You will not be able to develop this game without having Python and Pygame installed
 
 ## Install the source code with
 ```
