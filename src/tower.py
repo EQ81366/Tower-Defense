@@ -1,3 +1,4 @@
+import numpy
 import pygame, math
 from typing import Any, TYPE_CHECKING
 from constants import TowerConstants, TargetingStates
@@ -15,7 +16,7 @@ screen = pygame.display.set_mode((0, 0))  # in pixels
 
 class Towers(pygame.sprite.Sprite):
     id = 0
-    range_circle = pygame.image.load(get_resource_path(Path("assets/circle.png")))
+    range_circle = pygame.image.load(get_resource_path(Path("assets/circle.png"))).convert_alpha()
 
     def __init__(self, *groups: Any):
         super().__init__()
@@ -35,25 +36,30 @@ class Towers(pygame.sprite.Sprite):
         self.range = int(info[5])
         self.rotation_speed = int(info[6])
 
+        self.range_sq = self.range**2
+
         self.recoil_multiplier = 5
 
         self.wait = self.cooldown
         self.shots_left = self.turrets  # sets shots available to the amount of turrets
         self.current_angle = 0
         self.rotation_angle = 0
-        self.dr: int | float = 999
+        self.dr: int | float = 0
 
         self.upgrades_bought = {i: [False, False] for i in range(2)}
         self.enemies_killed: dict[int, int] = {i: 0 for i in range(5)}
 
+        #self.enemy_x = numpy.array([sprite.rect.centerx for sprite in enemies])
+        #self.enemy_y = numpy.array([sprite.rect.centery for sprite in enemies])
+
         # self.range_circle_scaled = pygame.transform.scale(self.range_circle, (self.range*2, self.range*2)) # scales the range circle accordingly to tower range
 
         tower_image_bundle = tower_images[self.tower]
-        self.b_image = tower_image_bundle[0]
-        self.image = tower_image_bundle[1]
-        self.f_image = tower_image_bundle[2]
+        self.b_image = tower_image_bundle[0].convert_alpha()
+        self.image = tower_image_bundle[1].convert_alpha()
+        self.f_image = tower_image_bundle[2].convert_alpha()
         if self.turrets > 1:
-            self.f2_image = tower_image_bundle[3]
+            self.f2_image = tower_image_bundle[3].convert_alpha()
 
         self.height = self.image.get_height()
         self.rect = self.image.get_rect(center=(self.x, self.y))
@@ -64,28 +70,13 @@ class Towers(pygame.sprite.Sprite):
         self.clicked = False
         self.upgrades_open = False
 
-        self.targeting_mode = TargetingStates.EFFICIENT  # targeting mode(default is rotationaly efficient)
+        #self.enemy_xy = numpy.array([[sprite.rect.centerx, sprite.rect.centery] for sprite in enemies])
+
+        self.targeting_mode = TargetingStates.FIRST  # targeting mode(default is rotationaly efficient)
 
     # defines the rotation and firing animation of the tower
     def rotate(self):
-        self.current_angle = (self.current_angle % 360 + 360) % 360
-        self.rotation_angle = (self.rotation_angle % 360 + 360) % 360
-
-        if abs(self.rotation_angle - self.current_angle) < abs(self.rotation_angle - 360 + self.current_angle):
-            self.dr = self.rotation_angle - self.current_angle
-        else:
-            self.dr = self.rotation_angle - 360 + self.current_angle
-
-        if abs(self.dr) > 1:
-            self.current_angle += self.rotation_speed / 60 * (self.dr / abs(self.dr))
-            self.dr = self.rotation_angle - self.current_angle
-            # if rotation is close enough based upon rotational speed it just accepts the wanted rotation value
-            if abs(self.dr) <= 2 * (self.rotation_speed / 100):
-                self.current_angle = self.rotation_angle
-
         self.r_image = pygame.transform.rotate(self.image, self.current_angle)
-        self.rect = self.r_image.get_rect(center=(self.x, self.y))
-        xy = [self.rect.centerx, self.rect.centery]
 
         # if shooting, switches image to shooting image
         if self.firing:
@@ -95,7 +86,7 @@ class Towers(pygame.sprite.Sprite):
             elif self.wait < self.cooldown / ((self.shots_left + 1) * self.recoil_multiplier) and self.turrets - 2 == self.shots_left:
                 self.r_image = pygame.transform.rotate(self.f2_image, self.current_angle)
 
-            self.rect = self.r_image.get_rect(center=(xy[0], xy[1]))
+        self.rect = self.r_image.get_rect(center=(self.x, self.y))
 
         self.dx = math.cos(math.radians(90 + self.current_angle)) * self.height / 2
         self.dy = math.sin(math.radians(90 + self.current_angle)) * self.height / 2
@@ -110,7 +101,6 @@ class Towers(pygame.sprite.Sprite):
 
     # creates a bullet
     def shoot(self):
-        #  ⌄⌄⌄⌄⌄⌄⌄⌄⌄⌄⌄⌄⌄⌄⌄⌄⌄⌄⌄⌄⌄⌄⌄⌄⌄⌄⌄⌄⌄⌄⌄⌄⌄⌄⌄⌄uncomment this for bullets⌄⌄⌄⌄⌄⌄⌄⌄⌄⌄⌄⌄⌄⌄⌄⌄⌄⌄⌄⌄⌄⌄⌄⌄⌄⌄⌄⌄⌄⌄⌄⌄⌄⌄⌄⌄⌄⌄⌄⌄⌄⌄⌄
         tower_projectiles.add(
             Tower_Projectiles(
                 self.tower,
@@ -123,106 +113,93 @@ class Towers(pygame.sprite.Sprite):
         )
 
     # finds the closest enemy
-    def find_closest_enemy(self) -> list[int]:
+    def find_closest_enemy(self, enemy_x : numpy.ndarray, enemy_y : numpy.ndarray) -> list[int]:
         enemy_death_info: list[int] = [0, 0]
 
-        x = 0
-        self.closest_id = 0
+        self.closest_id = -1
+
+        xy = self.rect.center
+
+        #self.enemy_xy = numpy.zeros((len(enemies), 2))
+
+        #for i, sprite in enumerate(enemies):
+        #    self.enemy_xy[i, = sprite.rect.centerx
+        #    self.enemy_xy[i, 1] = sprite.rect.centery
+
+        #if len(enemies) < 1:
+        #    self.enemy_xy = numpy.array(([0, 0], [0, 0]))
+
+        dx = numpy.subtract(enemy_x, xy[0])
+        dy = numpy.subtract(enemy_y, xy[1])
+
+        dist_sq = dx*dx + dy*dy
+
+        valid = numpy.where(dist_sq <= self.range_sq)[0]
+
+        if len(valid) < 1:
+            return enemy_death_info
 
         # targets the most "efficient" enemy; whichever enemy is fastest to shoot
         if self.targeting_mode is TargetingStates.EFFICIENT:
-            dr = 99999
-            lowest_dr = dr
-            for sprite in enemies:
-                dx = sprite.rect.centerx - self.rect.centerx
-                dy = sprite.rect.centery - self.rect.centery
-                distance = math.hypot(dx, dy)
-
-                angle = point_enemy(
+            dr = numpy.array([point_enemy(
                     self.rect.centerx,
                     self.rect.centery,
                     sprite.rect.centerx,
                     sprite.rect.centery,
-                )
-                dr = angle - self.current_angle
-
-                x += 1
-
-                if abs(dr) < abs(lowest_dr) and distance <= self.range:
-                    lowest_dr = dr
-                    self.closest_id = x
+                )%360 for sprite in enemies])
+            dr = abs(dr - self.current_angle)
+            
+            self.closest_id = int(valid[numpy.argmin(dr[valid])])
 
         # targets closest enemy
         elif self.targeting_mode is TargetingStates.CLOSE:
-            distance = 99999
-            closest_distance = distance
-
-            for sprite in enemies:
-                dx: int = int(sprite.rect.centerx) - self.rect.centerx
-                dy: int = int(sprite.rect.centery) - self.rect.centery
-                distance = math.hypot(dx, dy)
-
-                x += 1
-
-                if distance < closest_distance and distance <= self.range:
-                    closest_distance = distance
-                    self.closest_id = x
+            self.closest_id = int(valid[numpy.argmin(dist_sq[valid])])
 
         # targets the furthest most enemy in range
         elif self.targeting_mode is TargetingStates.FIRST:
-            for sprite in enemies:
-                dx: int = int(sprite.rect.centerx) - self.rect.centerx
-                dy: int = int(sprite.rect.centery) - self.rect.centery
-                distance = math.hypot(dx, dy)
-
-                x += 1
-
-                if distance <= self.range:
-                    self.closest_id = x
-                    break
+            self.closest_id = int(valid[numpy.argmin(valid)])
 
         # targets the furthest back enemy in range
         elif self.targeting_mode is TargetingStates.LAST:
-            for sprite in enemies:
-                dx: int = int(sprite.rect.centerx) - self.rect.centerx
-                dy: int = int(sprite.rect.centery) - self.rect.centery
-                distance = math.hypot(dx, dy)
-
-                x += 1
-
-                if distance <= self.range:
-                    self.closest_id = x
+            self.closest_id = int(valid[numpy.argmax(valid)])
 
         # targets the enemy with the most hp
         elif self.targeting_mode is TargetingStates.STRONG:
             e_hp = 0
-            highest_e_hp = e_hp
-            for sprite in enemies:
-                dx: int = int(sprite.rect.centerx) - self.rect.centerx
-                dy: int = int(sprite.rect.centery) - self.rect.centery
-                distance = math.hypot(dx, dy)
+            highest_e_hp = 0
+            for i, sprite in enumerate(enemies):
+                e_hp = sprite.max_hp
 
-                x += 1
-                e_hp = float(sprite.max_hp)
-
-                if e_hp > highest_e_hp and distance <= self.range:
+                if e_hp > highest_e_hp and i in valid:
                     highest_e_hp = e_hp
-                    self.closest_id = x
+                    self.closest_id = i
 
         # makes sure there are enemies within tower range
-        if self.closest_id != 0:
-            enemy_list = enemies.sprites()  # gets a list format of the enemies group
-
+        if self.closest_id != -1:
             # finds the angle to targeted enemy
             self.rotation_angle = point_enemy(
                 self.rect.centerx,
                 self.rect.centery,
-                int(enemy_list[self.closest_id - 1].rect.centerx),
-                int(enemy_list[self.closest_id - 1].rect.centery),
+                enemy_x[self.closest_id],
+                enemy_y[self.closest_id],
             )
 
+            self.current_angle = self.current_angle % 360
+            self.rotation_angle = self.rotation_angle % 360
+
+            if abs(self.rotation_angle - self.current_angle) < abs(360 - self.rotation_angle + self.current_angle):
+                self.dr = self.rotation_angle - self.current_angle
+            else:
+                self.dr = -(360 - self.rotation_angle + self.current_angle) # gotta make it negative bc otherwise my bs code doesn't work
+
+            if abs(self.dr) > 1:
+                self.current_angle += self.rotation_speed / 60 * (self.dr / abs(self.dr))
+                self.dr = self.rotation_angle - self.current_angle
+                # if rotation is close enough based upon rotational speed it just accepts the wanted rotation value
+                if abs(self.dr) <= 2 * (self.rotation_speed / 100):
+                    self.current_angle = self.rotation_angle
+
             # checks if firing cooldown is over and that the tower is rotated within 4 degrees of the enemy
-            # print(self.rotation_angle, self.current_angle)
             if abs(int(self.dr)) < 4:
                 if self.wait >= self.cooldown:
                     self.shots_left = self.turrets  # resets ammo

@@ -12,7 +12,7 @@ tower_images, shop_images = load_images(["tower", "shop"])
 
 pygame.font.init()
 
-screen = pygame.display.set_mode((120, 720))  # in pixels
+screen = pygame.display.set_mode((0, 0))  # in pixels
 
 
 class Shop(pygame.sprite.Sprite):
