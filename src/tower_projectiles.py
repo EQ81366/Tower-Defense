@@ -2,8 +2,9 @@ import pygame, math, numpy
 from typing import Any, TYPE_CHECKING
 from enemy import enemies
 from money import money_script
-from image_loader import TowerType, get_resource_path
+from image_loader import get_resource_path
 from pathlib import Path
+from constants import TowerConstants
 
 screen = pygame.display.set_mode((0, 0))  # in pixels
 
@@ -17,7 +18,7 @@ class Tower_Projectiles(pygame.sprite.Sprite):
 
         self.tower_id = groups[5]
 
-        self.projectile: TowerType = groups[0]
+        self.projectile: TowerConstants = groups[0]
 
         self.x = groups[1]
         self.y = groups[2]
@@ -27,10 +28,10 @@ class Tower_Projectiles(pygame.sprite.Sprite):
         self.damage = groups[4]
 
         # checks which projectile was spawned
-        if self.projectile is TowerType.BASIC:
+        if self.projectile is TowerConstants.BASIC:
             self.speed = 100
-            self.pierce = 2  # pierce = hp
-        elif self.projectile is TowerType.DOUBLE:
+            self.pierce = 99999  # pierce = hp
+        elif self.projectile is TowerConstants.DOUBLE:
             self.speed = 200
             self.pierce = 2
 

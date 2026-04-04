@@ -14,12 +14,11 @@ if __name__ == "__main__":
     from shop import Shop, shop
     from upgrade import Upgrades, upgrades
     from money import money_script
-    from image_loader import TowerType, ShopType, UpgradeType, EnemyType
-    from tower_projectiles import tower_projectiles, Tower_Projectiles
+    from tower_projectiles import tower_projectiles
     from mouse import mouse_info, clicked_and_released
     from fonts import font_30, font_50
     from map_sys import select_map, map
-    from constants import stat_constants
+    from constants import stat_constants, TowerConstants, ShopType, UpgradeType, EnemyType
 
     # TODO LIST
     # bruh. clean up code bc I'm lazy and don't want to make art
@@ -57,18 +56,16 @@ if __name__ == "__main__":
     current_map = select_map()
     path, movement_nodes, map_offsets = map(current_map)
 
-    for i in range(1):
-        towers.add(Towers(TowerType.BASIC, 640, 360))
+    for i in range(0):
+        towers.add(Towers(TowerConstants.BASIC, 640, 360))
 
     shop.add(Shop(ShopType.SHOPUI, 640, 900))
-    for i in range(len(TowerType)):
-        shop.add(Shop(TowerType._value2member_map_[i], 100 + 150 * i, 540))
+    for i, tower in enumerate(TowerConstants):
+        shop.add(Shop(tower, 100 + 150 * i, 540))
     shop.add(Shop(ShopType.TOWERUI, 0, 0))  # KEEP THIS AT END OF SHOP ITEMS
 
     upgrades.add(Upgrades(UpgradeType.UPGRADEUI, 1180, 360))
     upgrades.add(Upgrades(UpgradeType.UPGRADES, 1160, 360))
-
-    #tower_projectiles.add(Tower_Projectiles(TowerType.BASIC, 0, 0, 0, 1, 1))
 
     x = 0
     upgrade_info: list[int | str | float] = [0, "", 0.0]
@@ -84,10 +81,14 @@ if __name__ == "__main__":
     hovering_list: list[bool] = []
     open_list: list[bool] = []
     range_circle: tuple[pygame.Surface, list[float]] | None = None
-    tower_selected: TowerType | None = None
+    tower_selected: TowerConstants | None = None
+
+    enemy_cap = 10000
+
     enemy_x = numpy.zeros(10000, dtype=numpy.float32)
     enemy_y = numpy.zeros(10000, dtype=numpy.float32)
     enemy_movement_vector = numpy.zeros([10000, 2], dtype=numpy.float32)
+    # grouping = numpy.zeros([10000, 2], dtype=numpy.float32)
 
     play = font_50.render("Play", True, "black").convert_alpha()
     play_location = [
@@ -106,9 +107,9 @@ if __name__ == "__main__":
     initialized = True
 
     def stats(money: int, health_points: int):
-        text = font_30.render(f"Money: ${money}", True, "black").convert_alpha()
+        text = font_30.render(f"Money: ${money}", True, "black")
         screen.blit(text, (5, 0))
-        text = font_30.render(f"Health: {health_points}", True, "black").convert_alpha()
+        text = font_30.render(f"Health: {health_points}", True, "black")
         screen.blit(text, (5, 35))
 
     process = psutil.Process(os.getpid())
@@ -117,7 +118,7 @@ if __name__ == "__main__":
 
     frame_check = 0
 
-    #fps_list = numpy.array([99.9])
+    # fps_list = numpy.array([99.9])
 
     # and so begins the main script
     while running:
@@ -158,16 +159,22 @@ if __name__ == "__main__":
             # -------------------------------------------------------------- #
             # cycles through all the necessary commands for the enemies group
             # -------------------------------------------------------------- #
+            if len(enemies) > enemy_cap:
+                enemy_group = enemies.sprites()
+                for i in range(len(enemies) - enemy_cap):
+                    enemy_group[i].kill()
+
             for i, sprite in enumerate(enemies):
-                grouping = sprite.pathfind()
-                try:
-                    enemy_movement_vector[i][0] = grouping[0]
-                    enemy_movement_vector[i][1] = grouping[1]
-                except:
-                    pass
+                enemy_movement_vector[i] = sprite.pathfind(screen)
+                # try:
+                # if grouping != 0:
+                #    enemy_movement_vector[i][0] = grouping[0]
+                #    enemy_movement_vector[i][1] = grouping[1]
+                # except:
+                #    pass
                 enemy_x[i] = sprite.rect.centerx
                 enemy_y[i] = sprite.rect.centery
-                #pygame.draw.rect(screen, "red", (sprite.xy[0], sprite.xy[1], 5, 5))
+                # pygame.draw.rect(screen, "red", (sprite.xy[0], sprite.xy[1], 5, 5))
             # --------------------------------------------------------------------- #
 
             tower_list = towers.sprites()
@@ -265,11 +272,11 @@ if __name__ == "__main__":
             for sprite in shop:
                 # only runs hovering function for the panel type in the shop group
                 if sprite.shop is ShopType.SHOPUI:
-                    open = bool(sprite.hovering())
+                    open = bool(sprite.hovering(screen))
 
                 elif sprite.tower:  # checks if the shop item is a tower
                     if not placing_tower:
-                        temp_pkg = sprite.showing(open)
+                        temp_pkg = sprite.showing(screen, open)
                         placing_tower = temp_pkg[0]
                         hovering_on_tower = temp_pkg[1]
                         money_spent = temp_pkg[2]
@@ -281,7 +288,7 @@ if __name__ == "__main__":
                             tower_being_bought = temp_pkg[4]
 
                     if tower_being_bought is sprite.shop and placing_tower:
-                        placing_tower = bool(sprite.place_tower())
+                        placing_tower = bool(sprite.place_tower(screen))
 
                     if not placing_tower:
                         money_script(False, money_spent)
@@ -289,7 +296,7 @@ if __name__ == "__main__":
                     hovering_list += [hovering_on_tower]
                 else:
                     if True in hovering_list:
-                        sprite.show_stats(open, tower_stats)
+                        sprite.show_stats(screen, open, tower_stats)
             # ------------------------------------------------------------------------------- #
 
             money = money_script(None, 0)  # finds the current amount of money
@@ -297,15 +304,16 @@ if __name__ == "__main__":
 
             x += 1
             if x > 10:
-                for i in range(1):
+                for i in range(10):
                     enemies.add(Enemies(EnemyType.BASIC, 8, 280))
                 x = 10
 
         pygame.display.flip()
+        # pygame.display.update()
         clock.tick(60)
         fps = clock.get_fps()
         print(fps, len(enemies))
-        #print(fps)
+        # print(fps)
         if fps < 5 and frame_check == 100:
             print("GAME CRASHED")
             running = False

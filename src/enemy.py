@@ -1,16 +1,14 @@
-import numpy
 import pygame, math, pygame.gfxdraw
 from typing import TYPE_CHECKING, Any
-from image_loader import load_images, EnemyType
+from image_loader import load_images
 from constants import EnemyConstants, EnemyShape
 from map_sys import show_map, map
-from fonts import font_30
 
 enemy_images = load_images(["enemy"])[0]
 
 movement_nodes = map(show_map())[1]
 
-screen = pygame.display.set_mode((0, 0))  # in pixels
+#screen = pygame.display.set_mode((0, 0))  # in pixels
 
 
 class Enemies(pygame.sprite.Sprite):
@@ -21,11 +19,11 @@ class Enemies(pygame.sprite.Sprite):
         self.id = Enemies.id
         Enemies.id += 1
 
-        self.enemy: EnemyType = groups[0]
+        self.enemy: EnemyConstants = groups[0]
 
-        self.xy: pygame.Vector2 = pygame.Vector2(groups[1], groups[2])
+        self.xy = [groups[1], groups[2]]
 
-        info = EnemyConstants[self.enemy.name.upper()].value
+        info = EnemyConstants[self.enemy.name.upper()].constants
 
         self.shape = info[0][0]
         self.color = info[0][1]
@@ -59,6 +57,8 @@ class Enemies(pygame.sprite.Sprite):
         self.damage_frame_length = int(30 / self.weight)
         self.damage_frame = 0
 
+        self.speed_sq = self.speed**2
+
         self.money_drop = round(4**self.tier)
         self.damage_at_end = 2**self.tier
         if self.damage_at_end > 1:
@@ -71,43 +71,45 @@ class Enemies(pygame.sprite.Sprite):
         self.rect = self.image.get_rect(center=(self.xy))
         # sets the current destination number(refer to the map system above)
         self.current_node : int = 0
-        self.amount_of_nodes = len(movement_nodes)
+        #self.amount_of_nodes = len(movement_nodes)
 
         self.frame = 0
 
     # script to make enemies go to map destinations
-    def pathfind(self):
+    def pathfind(self, screen: Any):
         self.damage_frame -= 1
-        if self.damage_frame == 0:
-            self.used_color = self.color
-
-        if self.amount_of_nodes != self.current_node and self.damage_frame <= 0:
+        #if self.damage_frame == 0:
+        #    self.used_color = self.color
+        current_node = self.current_node
+        if len(movement_nodes) != current_node: #and self.damage_frame <= 0:
             #if self.damage_frame == 0:
             #    self.used_color = self.color
             # determines which destination in the destination list to go to
-            destination = movement_nodes[self.current_node]
+            destination = movement_nodes[current_node]
             location = self.rect.center
 
             distance = math.dist(destination, location)
+
+            speed = self.speed
             
             # determines if the enemy actually made it to it's destination
-            if distance < self.speed:
+            if distance < speed:
                 self.current_node += 1
                 self.rect.center = destination # type: ignore
                 pygame.gfxdraw.filled_circle(screen, self.rect.centerx, self.rect.centery, self.radius, self.used_color)
+                #return 0, 0
             else:
                 #vector normalized movement
-                dx = destination[0] - location[0]
-                dy = destination[1] - location[1]
+                ratio = speed / distance
 
-                movement_vector_x = dx / distance * self.speed
-                movement_vector_y = dy / distance * self.speed 
+                movement_vector_x = (destination[0] - location[0]) * ratio
+                movement_vector_y = (destination[1] - location[1]) * ratio
 
                 self.xy[0] += movement_vector_x
                 self.xy[1] += movement_vector_y
 
-                self.rect.centerx = int(self.xy.x)
-                self.rect.centery = int(self.xy.y)
+                self.rect.centerx = int(self.xy[0])
+                self.rect.centery = int(self.xy[1])
 
                 pygame.gfxdraw.filled_circle(screen, self.rect.centerx, self.rect.centery, self.radius, self.used_color)
                 #screen.blit(font_30.render(str(self.hp), True, "white"), self.rect.center)
@@ -116,7 +118,7 @@ class Enemies(pygame.sprite.Sprite):
                 return movement_vector_x, movement_vector_y
 
         # if enemy reaches end of map
-        elif len(movement_nodes) == self.current_node:
+        elif len(movement_nodes) == current_node:
             self.kill()
             return self.damage_at_end # returns the amount of damage to deal
 
@@ -124,12 +126,13 @@ class Enemies(pygame.sprite.Sprite):
         #    screen.blit(self.current_image, self.rect)  # draws the enemies
         #else:
 
-        return 0
+        #return 0, 0
 
     def damage(self, damage: float) -> list[int]:
         if self.damage_frame <= 0:
             self.hp -= damage
             self.damage_frame = self.damage_frame_length
+
             if self.shape is EnemyShape.COMPLEX:
                 self.current_image = self.damage_image
             else:

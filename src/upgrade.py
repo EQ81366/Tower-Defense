@@ -1,14 +1,15 @@
 import pygame
 from typing import TYPE_CHECKING, Any
-from image_loader import load_images, UpgradeType, TowerType
+from image_loader import load_images
 from upgrade_loader import load_upgrades
 from money import money_script
 from mouse import mouse_info, clicked_and_released
 from fonts import font_30, font_25
+from constants import UpgradeType, TowerConstants
 
 tower_images, upgrade_images = load_images(["tower", "upgrade"])
 
-upgrade_text = load_upgrades()
+tower_upgrades = load_upgrades()
 
 screen = pygame.display.set_mode((0, 0))  # in pixels
 
@@ -24,7 +25,7 @@ class Upgrades(pygame.sprite.Sprite):
 
         self.clicked = False
 
-        self.image: pygame.Surface = upgrade_images[self.upgrade][0]
+        self.image: pygame.Surface = upgrade_images[self.upgrade][0].convert_alpha()
 
         self.rect = self.image.get_rect(center=(self.x, self.y))
 
@@ -46,7 +47,7 @@ class Upgrades(pygame.sprite.Sprite):
     def upgrades(
         self,
         open: bool,
-        tower: TowerType,
+        tower: TowerConstants,
         tower_tier: int,
         right_side: bool,
         upgraded: list[bool],
@@ -79,13 +80,9 @@ class Upgrades(pygame.sprite.Sprite):
 
             # shows the selected tower's name and tier
             text = font_30.render(tower.name.capitalize(), True, "black")
-            screen.blit(
-                text, (self.rect.x - (text.get_width() - self.rect.width) / 2, 160)
-            )
+            screen.blit(text, (self.rect.x - (text.get_width() - self.rect.width) / 2, 160))
             text = font_25.render(f"Tier: {tower_tier}", True, "black")
-            screen.blit(
-                text, (self.rect.x - (text.get_width() - self.rect.width) / 2, 193)
-            )
+            screen.blit(text, (self.rect.x - (text.get_width() - self.rect.width) / 2, 193))
 
             tower_tier += 1  # for upgrade info
 
@@ -93,36 +90,27 @@ class Upgrades(pygame.sprite.Sprite):
             screen.blit(self.image, (self.rect.x, self.rect.y))
             screen.blit(self.image, (self.rect.x, self.rect.y + 80))
 
-            text_info, upgrade_info = upgrade_text[
-                tower
-            ]  # gets the upgrade info for the tower currently selected
+            upgrade_text, upgrade_info = tower_upgrades[tower]  # gets the upgrade info for the tower currently selected
 
-            for i in range(len(text_info[tower_tier * 2 - 2])):
+            for i in range(len(upgrade_text[tower_tier * 2 - 2])):
                 screen.blit(
-                    text_info[tower_tier * 2 - 2][i],
+                    upgrade_text[tower_tier * 2 - 2][i],
                     (self.rect.x + 7, self.rect.y + 8 + 25 * i),
                 )
 
-            for i in range(len(text_info[tower_tier * 2 - 1])):
+            for i in range(len(upgrade_text[tower_tier * 2 - 1])):
                 screen.blit(
-                    text_info[tower_tier * 2 - 1][i],
+                    upgrade_text[tower_tier * 2 - 1][i],
                     (self.rect.x + 7, self.rect.y + 88 + 25 * i),
                 )
 
             pressed, self.clicked = clicked_and_released(mouse_down, self.clicked)
 
-            if (
-                self.rect.collidepoint(mouse_xy)
-                and pressed
-                and money >= int(upgrade_info[tower_tier * 2 - 2][0])
-                and not upgraded[0]
-            ):
+            if self.rect.collidepoint(mouse_xy) and pressed and money >= int(upgrade_info[tower_tier * 2 - 2][0]) and not upgraded[0]:
                 return upgrade_info[tower_tier * 2 - 2]
 
             if (
-                pygame.Rect(
-                    self.rect.x, self.rect.y + 80, self.rect.width, self.rect.height
-                ).collidepoint(mouse_xy)
+                pygame.Rect(self.rect.x, self.rect.y + 80, self.rect.width, self.rect.height).collidepoint(mouse_xy)
                 and pressed
                 and money >= int(upgrade_info[tower_tier * 2 - 1][0])
                 and not upgraded[1]

@@ -1,7 +1,7 @@
 import pygame
 from typing import TYPE_CHECKING, Any
-from constants import TowerConstants
-from image_loader import load_images, ShopType, TowerType
+from constants import TowerConstants, ShopType
+from image_loader import load_images
 from map_sys import show_map, map
 from money import money_script
 from mouse import mouse_info, clicked_and_released
@@ -12,7 +12,7 @@ tower_images, shop_images = load_images(["tower", "shop"])
 
 pygame.font.init()
 
-screen = pygame.display.set_mode((0, 0))  # in pixels
+#screen = pygame.display.set_mode((0, 0))  # in pixels
 
 
 class Shop(pygame.sprite.Sprite):
@@ -33,21 +33,21 @@ class Shop(pygame.sprite.Sprite):
         if not self.shop in ShopType:
             self.tower = True
 
-            self.image: pygame.Surface = tower_images[TowerType[self.shop.name]][0]  # loads a tower base image
+            self.image: pygame.Surface = tower_images[TowerConstants[self.shop.name]][0]  # loads a tower base image
 
-            tower_stats = TowerConstants[self.shop.name].value
+            tower_stats = TowerConstants[self.shop.name].constants
             self.cost = int(tower_stats[7])
 
             self.text = font_25.render(
                 f"{self.shop.name.capitalize()} ${self.cost}", True, "black"
-            )
+            ).convert_alpha()
 
             self.description = [
-                font_16.render(f"{self.shop.name.capitalize()}:", True, "black"),
-                font_16.render(f"Damage: {tower_stats[3]}", True, "black"),
-                font_16.render(f"Cooldown: {tower_stats[4]}", True, "black"),
-                font_16.render(f"Range: {tower_stats[5]}", True, "black"),
-                font_16.render(f"R-Speed:  {tower_stats[6]}", True, "black"),
+                font_16.render(f"{self.shop.name.capitalize()}:", True, "black").convert_alpha(),
+                font_16.render(f"Damage: {tower_stats[3]}", True, "black").convert_alpha(),
+                font_16.render(f"Cooldown: {tower_stats[4]}", True, "black").convert_alpha(),
+                font_16.render(f"Range: {tower_stats[5]}", True, "black").convert_alpha(),
+                font_16.render(f"R-Speed:  {tower_stats[6]}", True, "black").convert_alpha(),
             ]
 
             self.clicked = False
@@ -59,7 +59,7 @@ class Shop(pygame.sprite.Sprite):
         self.rect = self.image.get_rect(center=(self.original_x, self.original_y))
 
     # checks whether the mouse is hovering over the shop panel and changes the panel accordingly
-    def hovering(self):
+    def hovering(self, screen: Any):
         mouse_xy = mouse_info()[0]
 
         if self.rect.collidepoint(mouse_xy):
@@ -74,7 +74,7 @@ class Shop(pygame.sprite.Sprite):
         return self.open
 
     # checks if the shop is open and if so, displays all the items in the shop
-    def showing(self, open: bool):
+    def showing(self, screen: Any, open: bool):
         hovering_on_tower = False
         if open:
             money = money_script(None, 0)
@@ -112,7 +112,7 @@ class Shop(pygame.sprite.Sprite):
         return False, hovering_on_tower, 0, self.description, self.shop
 
     # if the user bought a tower from the shop, it will follow the mouse until placed
-    def place_tower(self):
+    def place_tower(self, screen: Any):
         mouse_xy, mouse_down = mouse_info()
 
         self.rect.centerx = mouse_xy[0]
@@ -144,7 +144,7 @@ class Shop(pygame.sprite.Sprite):
 
         return True
 
-    def show_stats(self, open: bool, tower_stats: list[pygame.Surface] | None):
+    def show_stats(self, screen: Any, open: bool, tower_stats: list[pygame.Surface] | None):
         if open:
             mouse_xy = mouse_info()[0]
 

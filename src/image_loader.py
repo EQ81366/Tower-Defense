@@ -1,10 +1,8 @@
-import os
-
-import pygame, sys
+import pygame, os
 from enum import Enum
 from pathlib import Path
 from typing import Mapping
-
+from constants import TowerConstants, EnemyType, ShopType, UpgradeType
 
 def get_resource_path(relative_path: Path):
     """Get absolute path to resource, works for dev and for PyInstaller"""
@@ -23,30 +21,6 @@ def image_paths(type: str, sub_type: Enum | None):
     images = os.listdir(image_folder)
 
     return image_folder, images
-
-
-# enum of all enemies
-class EnemyType(Enum):
-    BASIC = 0
-
-
-# enum of all towers
-class TowerType(Enum):
-    BASIC = 0
-    DOUBLE = 1
-
-
-# enum of all shop items
-class ShopType(Enum):
-    SHOPUI = 0
-    TOWERUI = 1
-
-
-# enum of all upgrades
-class UpgradeType(Enum):
-    UPGRADEUI = 0
-    UPGRADES = 1
-
 
 # loads all game images
 def load_images(retrieve: list[str]):
@@ -69,7 +43,7 @@ def load_images(retrieve: list[str]):
         tower_list: dict[Enum, list[pygame.Surface]] = {}  # dict of all tower images
 
         # loads all the tower images
-        for enum in TowerType:
+        for enum in TowerConstants:
             paths = image_paths("tower", enum)
             tower_image_paths = sorted(
                 paths[1]

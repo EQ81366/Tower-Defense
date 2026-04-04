@@ -2,7 +2,7 @@ import numpy
 import pygame, math
 from typing import Any, TYPE_CHECKING
 from constants import TowerConstants, TargetingStates
-from image_loader import load_images, TowerType, get_resource_path
+from image_loader import load_images, get_resource_path
 from tower_aiming import point_enemy
 from mouse import mouse_info, clicked_and_released
 from enemy import enemies
@@ -24,11 +24,11 @@ class Towers(pygame.sprite.Sprite):
         self.id = Towers.id
         Towers.id += 1
 
-        self.tower: TowerType = groups[0]
+        self.tower: TowerConstants = groups[0]
         self.x: int = groups[1]
         self.y: int = groups[2]
 
-        info = TowerConstants[self.tower.name].value
+        info = TowerConstants[self.tower.name].constants
         self.tier = int(info[1])
         self.turrets = int(info[2])
         self.damage = int(info[3])
@@ -70,7 +70,7 @@ class Towers(pygame.sprite.Sprite):
         self.clicked = False
         self.upgrades_open = False
 
-        #self.enemy_xy = numpy.array([[sprite.rect.centerx, sprite.rect.centery] for sprite in enemies])
+        self.upgrade_path = ""
 
         self.targeting_mode = TargetingStates.FIRST  # targeting mode(default is rotationaly efficient)
 
