@@ -1,4 +1,4 @@
-import pygame, os
+import pygame, os, sys
 from enum import Enum
 from pathlib import Path
 from typing import Mapping
@@ -10,7 +10,13 @@ pygame.display.set_mode(flags=pygame.HIDDEN)
 
 def get_resource_path(relative_path: Path):
     """Get absolute path to resource, works for dev and for PyInstaller"""
-    return Path(*(Path(__file__).resolve().parent).parts[:-1]) / relative_path
+    try:
+        # PyInstaller creates a temp folder and stores path in _MEIPASS
+        base_path = Path(sys._MEIPASS) # type: ignore
+    except Exception:
+        base_path = Path(".").absolute()
+
+    return base_path / relative_path
 
 
 # finds the image paths
