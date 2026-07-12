@@ -2,7 +2,7 @@ from enum import Enum
 
 
 def stat_constants():
-    starting_money = 1000
+    starting_money = 100000
     hp = 100
 
     return [starting_money, hp]
@@ -12,26 +12,64 @@ class EnemyShape(Enum):
     COMPLEX = None
     CIRCLE = "circle"
 
+
 class EnemyConstants(Enum):
     # [A, B, C, D, E, (F)]
     # replace A with (image type, color), B with tier, C with speed, D with hp, E with weight, (F with custom money drop)
-    BASIC = (((EnemyShape.CIRCLE, (0, 0, 0)), 0, 2.0, 1, 10), 0)
-    TANK = (((EnemyShape.CIRCLE, (0, 255, 0)), 0, 0.5, 100, 4), 1)
+    BASIC = (((EnemyShape.CIRCLE, (0, 0, 0)), 0, 2.0, 1, 2), 0, (False,))
+    TANK = (((EnemyShape.CIRCLE, (0, 255, 0)), 0, 0.5, 100, 4), 1, (False,))
 
-    def __init__(self, constants: tuple[tuple[EnemyShape, tuple[int, int, int]], int, float, int, int], number: int):
+    def __init__(self, constants: tuple[tuple[EnemyShape, tuple[int, int, int]], int, float, int, int], number: int, abilities: tuple[bool]):
         self.constants = constants
         self.number = number
+        self.abilities = abilities
+
+
+class EnemyAbilities(Enum):
+    STUN_IMMUNITY = 0  # enemy will be able to move when shot
 
 
 class TowerConstants(Enum):
-    # [A, B, C, D, E, F]
-    # replace A with type, B with tier, C with turrets, D with dmg, E with cd, F with range, G with rotation speed, H with cost
-    BASIC = (("basic", 0, 1, 1, 60, 200, 300, 100), 0)
-    DOUBLE = (("double", 0, 2, 4, 140, 1000, 60, 300), 0)
+    # last number is constants is always cost
+    BASIC = ((0, 1, 1, 60, 200, 120, 1, 100), 0, (100, 1, 1, 1, 0, False, 300, 5, 0.5, False, False, False, 0, 0))
+    DOUBLE = ((0, 2, 4, 140, 150, 60, 2, 300), 1, (150, 1, 1, 1, 0, False, 250, 5, 0.5, False, False, False, 0, 0))
 
-    def __init__(self, constants: tuple[str, int, int, int, int, int, int, int], number: int):
+    def __init__(
+        self,
+        constants: tuple[int, int, int, int, int, int, int, int],
+        number: int,
+        bullet_info: tuple[int, int, int, int, int, bool, int, int, float, bool, bool, bool, int, int],
+    ):
         self.constants = constants
         self.number = number
+        self.bullet_info = bullet_info
+
+
+class TowerStats(Enum):
+    TIER = 0
+    TURRETS = 1
+    DAMAGE = 2
+    COOLDOWN = 3
+    RANGE = 4
+    ROTATION_SPEED = 5
+    BULLET_CAPACITY = 6
+
+
+class BulletStats(Enum):
+    SPEED = 0
+    PIERCE = 1
+    SIZE = 2
+    BULLET_AMOUNT = 3
+    BULLET_SPREAD = 4
+    SHRAPNEL = 5
+    SHRAPNEL_DISTANCE = 6
+    SHRAPNEL_AMOUNT = 7
+    SHRAPNEL_DAMAGE = 8
+    SHRAPNEL_CHAINING = 9
+    BLEEDING = 10
+    GROWTH = 11
+    SLOWING = 12
+    KNOCKBACK = 13
 
 
 class TargetingStates(Enum):
@@ -40,11 +78,6 @@ class TargetingStates(Enum):
     FIRST = 2
     LAST = 3
     STRONG = 4
-
-
-# enum of all enemies
-class EnemyType(Enum):
-    BASIC = 0
 
 
 # enum of all shop items

@@ -1,17 +1,17 @@
 import numpy
 import pygame, math
+from random import randint
 from typing import Any, TYPE_CHECKING
-from constants import TowerConstants, TargetingStates
+from constants import TowerConstants, TargetingStates, TowerStats, BulletStats
 from image_loader import load_images, get_resource_path
 from tower_aiming import point_enemy
 from mouse import mouse_info, clicked_and_released
 from enemy import enemies
 from tower_projectiles import Tower_Projectiles, tower_projectiles
 from pathlib import Path
+from scipy.spatial.distance import cdist
 
 tower_images = load_images(["tower"])[0]
-
-screen = pygame.display.set_mode((0, 0))  # in pixels
 
 
 class Towers(pygame.sprite.Sprite):
@@ -28,209 +28,184 @@ class Towers(pygame.sprite.Sprite):
         self.x: int = groups[1]
         self.y: int = groups[2]
 
-        info = TowerConstants[self.tower.name].constants
-        self.tier = int(info[1])
-        self.turrets = int(info[2])
-        self.damage = int(info[3])
-        self.cooldown = int(info[4])
-        self.range = int(info[5])
-        self.rotation_speed = int(info[6])
+        info = self.tower.constants
 
-        self.range_sq = self.range**2
+        self.stats = {stat: int(info[i]) for i, stat in enumerate(TowerStats)}
 
-        self.recoil_multiplier = 5
+        bullet_info = self.tower.bullet_info
 
-        self.wait = self.cooldown
-        self.shots_left = self.turrets  # sets shots available to the amount of turrets
+        self.bullet_stats = {stat: bullet_info[i] for i, stat in enumerate(BulletStats)}
+
+        self.recoil_time = 5
+
+        self.wait = self.stats[TowerStats.COOLDOWN]
+
+        self.shots_left = self.stats[TowerStats.BULLET_CAPACITY]
         self.current_angle = 0
-        self.rotation_angle = 0
-        self.dr: int | float = 0
+        self.dr: float = 0
 
-        self.upgrades_bought = {i: [False, False] for i in range(2)}
+        self.upgrades_bought = {i: [False, False] for i in range(4)}
+        self.upgrade_path = [0]
+
         self.enemies_killed: dict[int, int] = {i: 0 for i in range(5)}
 
-        #self.enemy_x = numpy.array([sprite.rect.centerx for sprite in enemies])
-        #self.enemy_y = numpy.array([sprite.rect.centery for sprite in enemies])
-
-        # self.range_circle_scaled = pygame.transform.scale(self.range_circle, (self.range*2, self.range*2)) # scales the range circle accordingly to tower range
-
         tower_image_bundle = tower_images[self.tower]
-        self.b_image = tower_image_bundle[0].convert_alpha()
-        self.image = tower_image_bundle[1].convert_alpha()
-        self.f_image = tower_image_bundle[2].convert_alpha()
-        if self.turrets > 1:
-            self.f2_image = tower_image_bundle[3].convert_alpha()
+        self.b_image = tower_image_bundle[0]
+        self.image = tower_image_bundle[1]
+        self.f_image = tower_image_bundle[2]
+        if self.stats[TowerStats.TURRETS] > 1:
+            self.f2_image = tower_image_bundle[3]
 
         self.height = self.image.get_height()
         self.rect = self.image.get_rect(center=(self.x, self.y))
         self.b_rect = self.b_image.get_rect(center=(self.x, self.y))
 
         self.firing = False
-        self.shoot_enemy = False
         self.clicked = False
         self.upgrades_open = False
 
-        self.upgrade_path = ""
+        # this is for upgrade side
+        if self.x > 640:
+            self.right_side = False
+        else:
+            self.right_side = True
 
-        self.targeting_mode = TargetingStates.FIRST  # targeting mode(default is rotationaly efficient)
+        self.targeting_mode = TargetingStates.LAST  # targeting mode(default is rotationally efficient)
 
     # defines the rotation and firing animation of the tower
-    def rotate(self):
-        self.r_image = pygame.transform.rotate(self.image, self.current_angle)
-
-        # if shooting, switches image to shooting image
+    def rotate(self, screen: pygame.Surface):
         if self.firing:
-            if self.wait < self.cooldown / ((self.shots_left + 1) * self.recoil_multiplier) and self.turrets - 1 == self.shots_left:
-                self.r_image = pygame.transform.rotate(self.f_image, self.current_angle)
+            f_image = self.f_image
+            if self.stats[TowerStats.TURRETS] == 2:
+                if self.shots_left % 2 == 0:
+                    f_image = self.f2_image
 
-            elif self.wait < self.cooldown / ((self.shots_left + 1) * self.recoil_multiplier) and self.turrets - 2 == self.shots_left:
-                self.r_image = pygame.transform.rotate(self.f2_image, self.current_angle)
+            current_image = f_image
+            self.recoil_time -= 1
+        else:
+            current_image = self.image
 
-        self.rect = self.r_image.get_rect(center=(self.x, self.y))
+        if self.recoil_time <= 0:
+            self.firing = False
+            self.recoil_time = 5
 
-        self.dx = math.cos(math.radians(90 + self.current_angle)) * self.height / 2
-        self.dy = math.sin(math.radians(90 + self.current_angle)) * self.height / 2
+        r_image = pygame.transform.rotate(current_image, self.current_angle)
+        self.rect = r_image.get_rect(center=(self.x, self.y))
+
+        dx = math.cos(math.radians(90 + self.current_angle)) * self.height / 2
+        dy = math.sin(math.radians(90 + self.current_angle)) * self.height / 2
 
         screen.blit(self.b_image, self.b_rect)
-        screen.blit(self.r_image, (self.rect.x + self.dx, self.rect.y - self.dy))
-
-    # determines when to switch back to the original tower state
-    def unfire(self):
-        if self.wait > self.cooldown / 5 and self.shots_left != self.turrets - 1:
-            self.firing = False
+        screen.blit(r_image, (self.rect.x + dx, self.rect.y - dy))
 
     # creates a bullet
     def shoot(self):
-        tower_projectiles.add(
-            Tower_Projectiles(
-                self.tower,
-                self.rect.centerx,
-                self.rect.centery,
-                self.current_angle,
-                self.damage,
-                self.id,
-            )
-        )
-
-    # finds the closest enemy
-    def find_closest_enemy(self, enemy_x : numpy.ndarray, enemy_y : numpy.ndarray) -> list[int]:
-        enemy_death_info: list[int] = [0, 0]
-
-        self.closest_id = -1
-
-        xy = self.rect.center
-
-        #self.enemy_xy = numpy.zeros((len(enemies), 2))
-
-        #for i, sprite in enumerate(enemies):
-        #    self.enemy_xy[i, = sprite.rect.centerx
-        #    self.enemy_xy[i, 1] = sprite.rect.centery
-
-        #if len(enemies) < 1:
-        #    self.enemy_xy = numpy.array(([0, 0], [0, 0]))
-
-        dx = numpy.subtract(enemy_x, xy[0])
-        dy = numpy.subtract(enemy_y, xy[1])
-
-        dist_sq = dx*dx + dy*dy
-
-        valid = numpy.where(dist_sq <= self.range_sq)[0]
-
-        if len(valid) < 1:
-            return enemy_death_info
-
-        # targets the most "efficient" enemy; whichever enemy is fastest to shoot
-        if self.targeting_mode is TargetingStates.EFFICIENT:
-            dr = numpy.array([point_enemy(
+        spread = self.bullet_stats[BulletStats.BULLET_SPREAD]
+        for i in range(self.bullet_stats[BulletStats.BULLET_AMOUNT]):  # type: ignore
+            tower_projectiles.add(
+                Tower_Projectiles(
+                    self.tower,
                     self.rect.centerx,
                     self.rect.centery,
-                    sprite.rect.centerx,
-                    sprite.rect.centery,
-                )%360 for sprite in enemies])
-            dr = abs(dr - self.current_angle)
-            
-            self.closest_id = int(valid[numpy.argmin(dr[valid])])
-
-        # targets closest enemy
-        elif self.targeting_mode is TargetingStates.CLOSE:
-            self.closest_id = int(valid[numpy.argmin(dist_sq[valid])])
-
-        # targets the furthest most enemy in range
-        elif self.targeting_mode is TargetingStates.FIRST:
-            self.closest_id = int(valid[numpy.argmin(valid)])
-
-        # targets the furthest back enemy in range
-        elif self.targeting_mode is TargetingStates.LAST:
-            self.closest_id = int(valid[numpy.argmax(valid)])
-
-        # targets the enemy with the most hp
-        elif self.targeting_mode is TargetingStates.STRONG:
-            e_hp = 0
-            highest_e_hp = 0
-            for i, sprite in enumerate(enemies):
-                e_hp = sprite.max_hp
-
-                if e_hp > highest_e_hp and i in valid:
-                    highest_e_hp = e_hp
-                    self.closest_id = i
-
-        # makes sure there are enemies within tower range
-        if self.closest_id != -1:
-            # finds the angle to targeted enemy
-            self.rotation_angle = point_enemy(
-                self.rect.centerx,
-                self.rect.centery,
-                enemy_x[self.closest_id],
-                enemy_y[self.closest_id],
+                    self.current_angle + randint(int(spread * -1), int(spread)),
+                    self.stats[TowerStats.DAMAGE],
+                    self.id,
+                    self.bullet_stats,
+                    False,
+                )
             )
 
-            self.current_angle = self.current_angle % 360
-            self.rotation_angle = self.rotation_angle % 360
+    # finds the closest enemy
+    def find_closest_enemy(self, enemy_xy: numpy.ndarray):
+        if len(enemies) > 0:
+            closest_id = -1
 
-            if abs(self.rotation_angle - self.current_angle) < abs(360 - self.rotation_angle + self.current_angle):
-                self.dr = self.rotation_angle - self.current_angle
-            else:
-                self.dr = -(360 - self.rotation_angle + self.current_angle) # gotta make it negative bc otherwise my bs code doesn't work
+            xy = self.rect.center
 
-            if abs(self.dr) > 1:
-                self.current_angle += self.rotation_speed / 60 * (self.dr / abs(self.dr))
-                self.dr = self.rotation_angle - self.current_angle
-                # if rotation is close enough based upon rotational speed it just accepts the wanted rotation value
-                if abs(self.dr) <= 2 * (self.rotation_speed / 100):
-                    self.current_angle = self.rotation_angle
+            targeting_mode = self.targeting_mode
 
-            # checks if firing cooldown is over and that the tower is rotated within 4 degrees of the enemy
-            if abs(int(self.dr)) < 4:
-                if self.wait >= self.cooldown:
-                    self.shots_left = self.turrets  # resets ammo
-                    enemy_death_info = self.shoot_target(True)
+            distance = cdist(enemy_xy, [xy], "euclidean")
+            valid = distance <= self.stats[TowerStats.RANGE]
 
-                elif self.shots_left == self.turrets - 1 and self.wait >= self.cooldown / 5:
-                    enemy_death_info = self.shoot_target(True)
+            if len(numpy.where(valid)[0]) < 1:
+                return
 
-        return enemy_death_info
+            # targets the most "efficient" enemy; whichever enemy is fastest to shoot
+            if targeting_mode is TargetingStates.EFFICIENT:
+                dr = numpy.array(
+                    [
+                        point_enemy(
+                            xy[0],
+                            xy[1],
+                            sprite.rect.centerx,
+                            sprite.rect.centery,
+                        )
+                        % 360
+                        for sprite in enemies
+                    ]
+                )
+                dr = abs(dr - self.current_angle)
 
-    def shoot_target(self, shoot: bool) -> list[int]:
-        enemy_death_info = [0, 0]
+                closest_id = int(valid[numpy.argmin(dr[valid])])
+
+            # targets closest enemy
+            elif targeting_mode is TargetingStates.CLOSE:
+                closest_id = numpy.argmin(distance)
+
+            # targets the furthest most enemy in range
+            elif targeting_mode is TargetingStates.FIRST:
+                closest_id = numpy.min(numpy.where(valid)[0])
+
+            # targets the furthest back enemy in range
+            elif targeting_mode is TargetingStates.LAST:
+                closest_id = numpy.max(numpy.where(valid)[0])
+
+            # targets the enemy with the most hp
+            elif targeting_mode is TargetingStates.STRONG:
+                e_hp = 0
+                highest_e_hp = 0
+                for i, sprite in enumerate(enemies):
+                    e_hp = sprite.max_hp
+
+                    if e_hp > highest_e_hp and i in valid:
+                        highest_e_hp = e_hp
+                        closest_id = i
+
+            # makes sure there are enemies within tower range
+            if closest_id != -1:
+                current_enemy_xy = enemy_xy[closest_id]
+                # finds the angle to targeted enemy
+                rotation_angle = point_enemy(xy[0], xy[1], current_enemy_xy[0], current_enemy_xy[1])
+
+                # calculate the difference and wrap it to [-180, 180]
+                self.dr = (rotation_angle - self.current_angle) % 360
+                if self.dr > 180:
+                    self.dr -= 360
+
+                if abs(self.dr) > 1:
+                    self.current_angle += self.stats[TowerStats.ROTATION_SPEED] / 60 * (self.dr / abs(self.dr))
+                    if abs(self.dr) <= 2 * (
+                        self.stats[TowerStats.ROTATION_SPEED] / 100
+                    ):  # based on rotation speed, if delta rotation is low enough it sets current to wanted rotation
+                        self.current_angle = rotation_angle
+
+                # checks if firing cooldown is over and that the tower is rotated within 1 degree(s) of the enemy
+                if abs(int(self.dr)) < 1:
+                    if self.wait >= int(self.stats[TowerStats.COOLDOWN]):
+                        if self.shots_left <= 0:
+                            self.shots_left = self.stats[TowerStats.BULLET_CAPACITY]  # resets ammo
+                            self.wait = 0
+                        else:
+                            self.wait = int(
+                                self.stats[TowerStats.COOLDOWN] * 0.9
+                            )  # if shots left is greater than 0, wait time is drastically reduced
+                            self.shoot_target(True)
+
+    def shoot_target(self, shoot: bool):
         if shoot and self.shots_left > 0:
             self.shoot()
-            # enemy_list = enemies.sprites()
-            # damages the target
-            # if self.closest_id != 0:
-            # enemy_death_info : list[int] = enemy_list[self.closest_id-1].damage(self.damage)
-
-            # updates amount of enemies killed
-            #    if enemy_death_info != [0, 0]:
-            #        self.enemies_killed[enemy_death_info[0]] += 1
-
-            self.shoot_enemy = False
             self.firing = True
             self.shots_left -= 1
-            self.wait = 0
-
-            return enemy_death_info
-
-        return [0, 0]
 
     def open_upgrades(self, upgrade_rect: pygame.Rect):
         mouse_xy, mouse_down = mouse_info()
@@ -243,14 +218,11 @@ class Towers(pygame.sprite.Sprite):
 
         return self.upgrades_open
 
-    def show_range(self):
+    def show_range(self, screen: pygame.Surface):
         if self.upgrades_open:
-            self.range_circle_scaled = pygame.transform.scale(self.range_circle, (self.range * 2, self.range * 2))
-            return self.range_circle_scaled, [
-                self.x - self.range_circle_scaled.get_width() / 2,
-                self.y - self.range_circle_scaled.get_height() / 2,
-            ]
-        return None
+            range = self.stats[TowerStats.RANGE]
+            range_circle_scaled = pygame.transform.scale(self.range_circle, (range * 2, range * 2))
+            screen.blit(range_circle_scaled, (self.x - range_circle_scaled.get_width() / 2, self.y - range_circle_scaled.get_height() / 2))
 
 
 if TYPE_CHECKING:
