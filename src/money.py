@@ -3,14 +3,18 @@ from constants import stat_constants
 money = stat_constants()[0]
 
 
-def money_script(add: bool | None = None, amount: int = 0):
-    global money
-    if add is None:
-        return money
+class Money:
+    def __init__(self):
+        self.money = money
 
-    if add:
-        money += amount
-    elif not add:
-        money -= amount
+    def get_money(self):
+        return self.money
 
-    return money
+    def add_money(self, value: int):
+        self.money += value
+
+    def sub_money(self, value: int):
+        self.money -= value
+
+
+money_man = Money()

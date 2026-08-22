@@ -1,8 +1,7 @@
 import pygame, os, sys
 from enum import Enum
 from pathlib import Path
-from typing import Mapping
-from constants import TowerConstants, EnemyConstants, ShopType, UpgradeType
+from constants import TowerConstants, EnemyConstants, ShopType, UpgradeType, MapInfo
 
 pygame.display.init()
 pygame.display.set_mode(flags=pygame.HIDDEN)
@@ -12,7 +11,7 @@ def get_resource_path(relative_path: Path):
     """Get absolute path to resource, works for dev and for PyInstaller"""
     try:
         # PyInstaller creates a temp folder and stores path in _MEIPASS
-        base_path = Path(sys._MEIPASS) # type: ignore
+        base_path = Path(sys._MEIPASS)  # type: ignore
     except Exception:
         base_path = Path(".").absolute()
 
@@ -20,7 +19,7 @@ def get_resource_path(relative_path: Path):
 
 
 # finds the image paths
-def image_paths(type: str, sub_type: Enum | None):
+def image_paths(type: str, sub_type: Enum | None = None):
     if sub_type is not None:
         image_folder = Path(f"assets/{type}_images/{sub_type.name.lower()}")
     else:
@@ -33,12 +32,13 @@ def image_paths(type: str, sub_type: Enum | None):
     return image_folder, images
 
 
-# loads all game images
-def load_images(retrieve: list[str]):
-    image_list: list[Mapping[Enum, list[pygame.Surface]]] = []
+image_cache: dict[str, dict[Enum, list[pygame.Surface]]] = {}
 
-    if "enemy" in retrieve:
-        paths = image_paths("enemy", None)
+
+# loads all game images
+def load_images():
+    if not image_cache:
+        paths = image_paths("enemy")
         enemy_image_paths = sorted(paths[1])  # list of all enemy image paths
         enemy_list: dict[Enum, list[pygame.Surface]] = {}  # dict of all enemy images
 
@@ -46,9 +46,10 @@ def load_images(retrieve: list[str]):
         for enum in EnemyConstants:
             enemy_list[enum] = [pygame.image.load(paths[0] / enemy_image_paths[enum.number]).convert_alpha()]
 
-        image_list.append(enemy_list)
+        image_cache["enemy"] = enemy_list
 
-    if "tower" in retrieve:
+        # ---------------------------------------------------------------------------------------------------------- #
+
         tower_list: dict[Enum, list[pygame.Surface]] = {}  # dict of all tower images
 
         # loads all the tower images
@@ -62,10 +63,11 @@ def load_images(retrieve: list[str]):
 
             tower_list[enum] = temp_tower_list  # adds all the 3 tower images in one dict
 
-        image_list.append(tower_list)
+        image_cache["tower"] = tower_list
 
-    if "shop" in retrieve:
-        paths = image_paths("shop", None)
+        # ---------------------------------------------------------------------------------------------------------- #
+
+        paths = image_paths("shop")
         shop_image_paths = sorted(paths[1])  # list of all shop image paths
         shop_list: dict[Enum, list[pygame.Surface]] = {}  # dict of all shop images
 
@@ -73,10 +75,11 @@ def load_images(retrieve: list[str]):
         for enum in ShopType:
             shop_list[enum] = [pygame.image.load(paths[0] / shop_image_paths[enum.value]).convert_alpha()]
 
-        image_list.append(shop_list)
+        image_cache["shop"] = shop_list
 
-    if "upgrade" in retrieve:
-        paths = image_paths("upgrade", None)
+        # ---------------------------------------------------------------------------------------------------------- #
+
+        paths = image_paths("upgrade")
         upgrade_image_paths = sorted(paths[1])  # list of all upgrade image paths
         upgrade_list: dict[Enum, list[pygame.Surface]] = {}  # dict of all upgrade images
 
@@ -84,6 +87,19 @@ def load_images(retrieve: list[str]):
         for enum in UpgradeType:
             upgrade_list[enum] = [pygame.image.load(paths[0] / upgrade_image_paths[enum.value]).convert_alpha()]
 
-        image_list.append(upgrade_list)
+        image_cache["upgrade"] = upgrade_list
 
-    return image_list
+        # ---------------------------------------------------------------------------------------------------------- #
+
+        paths = image_paths("map")
+        map_image_paths = sorted(paths[1])
+        map_list: dict[Enum, list[pygame.Surface]] = {}
+
+        # loads all the map images
+        for i, enum in enumerate(MapInfo):
+            map_list[enum] = [pygame.image.load(paths[0] / map_image_paths[i]).convert_alpha()]
+
+        image_cache["map"] = map_list
+
+
+# ---------------------------------------------------------------------------------------------------------- #

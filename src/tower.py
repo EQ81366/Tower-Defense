@@ -3,20 +3,22 @@ import pygame, math
 from random import randint
 from typing import Any, TYPE_CHECKING
 from constants import TowerConstants, TargetingStates, TowerStats, BulletStats
-from image_loader import load_images, get_resource_path
+from image_loader import get_resource_path, image_cache
 from tower_aiming import point_enemy
 from mouse import mouse_info, clicked_and_released
-from enemy import enemies
-from tower_projectiles import Tower_Projectiles, tower_projectiles
+from enemy import enemies, enemy_progress, enemy_camo, enemy_mhp
+from tower_projectiles import TowerProjectiles, tower_projectiles
 from pathlib import Path
 from scipy.spatial.distance import cdist
+from map.map_sys import map_system
 
-tower_images = load_images(["tower"])[0]
+tower_images = image_cache["tower"]
 
 
 class Towers(pygame.sprite.Sprite):
     id = 0
     range_circle = pygame.image.load(get_resource_path(Path("assets/circle.png"))).convert_alpha()
+    upgrades_open_i: int = 0
 
     def __init__(self, *groups: Any):
         super().__init__()
@@ -29,11 +31,11 @@ class Towers(pygame.sprite.Sprite):
         self.y: int = groups[2]
 
         info = self.tower.constants
-
         self.stats = {stat: int(info[i]) for i, stat in enumerate(TowerStats)}
 
-        bullet_info = self.tower.bullet_info
+        self.prev_range = self.stats[TowerStats.RANGE]
 
+        bullet_info = self.tower.bullet_info
         self.bullet_stats = {stat: bullet_info[i] for i, stat in enumerate(BulletStats)}
 
         self.recoil_time = 5
@@ -70,7 +72,11 @@ class Towers(pygame.sprite.Sprite):
         else:
             self.right_side = True
 
-        self.targeting_mode = TargetingStates.LAST  # targeting mode(default is rotationally efficient)
+        self.points_in_range: numpy.ndarray = numpy.zeros(300)
+
+        self.targeting_mode = TargetingStates.FIRST  # targeting mode(default is rotationally efficient)
+
+        self.in_range()
 
     # defines the rotation and firing animation of the tower
     def rotate(self, screen: pygame.Surface):
@@ -103,7 +109,7 @@ class Towers(pygame.sprite.Sprite):
         spread = self.bullet_stats[BulletStats.BULLET_SPREAD]
         for i in range(self.bullet_stats[BulletStats.BULLET_AMOUNT]):  # type: ignore
             tower_projectiles.add(
-                Tower_Projectiles(
+                TowerProjectiles(
                     self.tower,
                     self.rect.centerx,
                     self.rect.centery,
@@ -112,6 +118,7 @@ class Towers(pygame.sprite.Sprite):
                     self.id,
                     self.bullet_stats,
                     False,
+                    self,
                 )
             )
 
@@ -124,56 +131,64 @@ class Towers(pygame.sprite.Sprite):
 
             targeting_mode = self.targeting_mode
 
-            distance = cdist(enemy_xy, [xy], "euclidean")
-            valid = distance <= self.stats[TowerStats.RANGE]
+            enemy_idxs: list[int] = []
+            points_in_range = self.points_in_range
+            points_in_range = points_in_range[points_in_range != -1]
+            points = map_system.get_all_nodes(points_in_range)
+            for i in range(len(points_in_range)):
+                i: int
+                idxs = points[int(i)][1]
+                for idx in idxs:
+                    enemy_idxs.append(idx)
 
-            if len(numpy.where(valid)[0]) < 1:
+            relative_positions = enemy_xy[enemy_idxs] - xy
+            distance = numpy.sum(relative_positions * relative_positions, axis=1)
+
+            tower_range = self.stats[TowerStats.RANGE]
+            valid = (distance <= tower_range * tower_range) & (enemy_camo[enemy_idxs] <= self.stats[TowerStats.CAMO_DETECTION])
+
+            local_idx = numpy.where(valid)[0]
+            if len(local_idx) < 1:
                 return
 
             # targets the most "efficient" enemy; whichever enemy is fastest to shoot
-            if targeting_mode is TargetingStates.EFFICIENT:
-                dr = numpy.array(
-                    [
-                        point_enemy(
-                            xy[0],
-                            xy[1],
-                            sprite.rect.centerx,
-                            sprite.rect.centery,
-                        )
-                        % 360
-                        for sprite in enemies
-                    ]
-                )
-                dr = abs(dr - self.current_angle)
+            # if targeting_mode is TargetingStates.EFFICIENT:
+            #     dr = numpy.array(
+            #         [
+            #             point_enemy(
+            #                 xy[0],
+            #                 xy[1],
+            #                 sprite.rect.centerx,
+            #                 sprite.rect.centery,
+            #             )
+            #             % 360
+            #             for sprite in enemies
+            #         ]
+            #     )
+            #     dr = abs(dr - self.current_angle)
 
-                closest_id = int(valid[numpy.argmin(dr[valid])])
+            #     closest_id = int(valid[numpy.argmin(dr[valid])])
 
             # targets closest enemy
-            elif targeting_mode is TargetingStates.CLOSE:
+            if targeting_mode is TargetingStates.CLOSE:
                 closest_id = numpy.argmin(distance)
 
             # targets the furthest most enemy in range
             elif targeting_mode is TargetingStates.FIRST:
-                closest_id = numpy.min(numpy.where(valid)[0])
+                closest_id = numpy.argmax(enemy_progress[enemy_idxs])
 
             # targets the furthest back enemy in range
             elif targeting_mode is TargetingStates.LAST:
-                closest_id = numpy.max(numpy.where(valid)[0])
+                closest_id = numpy.argmin(enemy_progress[enemy_idxs])
 
             # targets the enemy with the most hp
             elif targeting_mode is TargetingStates.STRONG:
-                e_hp = 0
-                highest_e_hp = 0
-                for i, sprite in enumerate(enemies):
-                    e_hp = sprite.max_hp
-
-                    if e_hp > highest_e_hp and i in valid:
-                        highest_e_hp = e_hp
-                        closest_id = i
+                closest_id = numpy.argmax(enemy_mhp[enemy_idxs])
 
             # makes sure there are enemies within tower range
             if closest_id != -1:
-                current_enemy_xy = enemy_xy[closest_id]
+                current_enemy_xy = enemy_xy[enemy_idxs[closest_id]]
+
                 # finds the angle to targeted enemy
                 rotation_angle = point_enemy(xy[0], xy[1], current_enemy_xy[0], current_enemy_xy[1])
 
@@ -216,13 +231,53 @@ class Towers(pygame.sprite.Sprite):
         elif not upgrade_rect.collidepoint(mouse_xy) and pressed:
             self.upgrades_open = False
 
+        if self.upgrades_open:
+            Towers.upgrades_open_i = self.id
+
         return self.upgrades_open
 
     def show_range(self, screen: pygame.Surface):
         if self.upgrades_open:
             range = self.stats[TowerStats.RANGE]
             range_circle_scaled = pygame.transform.scale(self.range_circle, (range * 2, range * 2))
-            screen.blit(range_circle_scaled, (self.x - range_circle_scaled.get_width() / 2, self.y - range_circle_scaled.get_height() / 2))
+            screen.blit(range_circle_scaled, (self.x - range, self.y - range))
+
+    def in_range(self):
+        self.prev_range = self.stats[TowerStats.RANGE]
+        points = map_system.get_all_nodes()
+
+        self.points_in_range[:] = -1
+        distance_to_points = cdist([point[0] for point in points], [self.rect.center])
+
+        valid_points = distance_to_points < self.stats[TowerStats.RANGE]
+        valid_idxs = numpy.where(valid_points)[0]
+
+        self.points_in_range[: valid_idxs.__len__()] = valid_idxs
+
+    def update(
+        self,
+        screen: pygame.Surface,
+        enemy_xy: numpy.ndarray,
+        upgrade_rect: pygame.Rect,
+    ):
+        self.wait += 1
+
+        if self.prev_range != self.stats[TowerStats.RANGE]:
+            self.in_range()
+
+        self.rotate(screen)
+        self.find_closest_enemy(enemy_xy)
+        self.open_upgrades(upgrade_rect)
+        self.show_range(screen)
+
+    @classmethod
+    def get_tower(cls):
+        return towers.sprites()[cls.upgrades_open_i]
+
+    @classmethod
+    def range(cls, screen: pygame.Surface, range: int, x: float, y: float):
+        range_circle_scaled = pygame.transform.scale(cls.range_circle, (range * 2, range * 2))
+        screen.blit(range_circle_scaled, (x - range, y - range))
 
 
 if TYPE_CHECKING:

@@ -1,3 +1,5 @@
 src/__pycache__
+src/map/__pycache__
 .vscode
-src/testing.py
+testing.py
+svgs

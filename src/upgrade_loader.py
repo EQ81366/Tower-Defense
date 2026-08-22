@@ -3,6 +3,7 @@ from fonts import font_16, font_18
 from constants import TowerConstants, TowerStats, BulletStats
 from operator import add, mul
 from typing import Any
+from types import FunctionType
 
 pygame.font.init()
 
@@ -68,14 +69,38 @@ def set_equal(a: Any, b: Any):
 # tier 1: 2 upgrades per branch, 2 branches
 # tier 2: 2 upgrades per branch, 4 branches
 upgrade_dict: dict[
-    int, dict[int, list[list[list[tuple[tuple[int, list[tuple[TowerStats | BulletStats, float, Any]]], *tuple[pygame.Surface, ...]]]]]]
+    int,
+    dict[
+        int,
+        list[
+            list[
+                list[
+                    tuple[
+                        tuple[
+                            int,
+                            list[tuple[TowerStats | BulletStats, float, FunctionType]],
+                        ],
+                        *tuple[pygame.Surface, ...],
+                    ]
+                ]
+            ]
+        ],
+    ],
 ] = {
     0: {
         0: [
             [
                 [
-                    ((100, [(TowerStats.COOLDOWN, 0.8, mul)]), render_text("Faster Reload:", True), render_text("cooldown decreased")),
-                    ((100, [(TowerStats.ROTATION_SPEED, 1.4, mul)]), render_text("Oiled Cogs:", True), render_text("increased turn speed")),
+                    (
+                        (100, [(TowerStats.COOLDOWN, 0.8, mul)]),
+                        render_text("Faster Reload:", True),
+                        render_text("cooldown decreased"),
+                    ),
+                    (
+                        (100, [(TowerStats.ROTATION_SPEED, 1.4, mul)]),
+                        render_text("Oiled Cogs:", True),
+                        render_text("increased turn speed"),
+                    ),
                 ]  # T0
             ]
         ],
@@ -88,12 +113,27 @@ upgrade_dict: dict[
                         render_text("turn speed greatly"),
                         render_text("increased"),
                     ),
-                    ((400, [(BulletStats.SPEED, 1.5, mul)]), render_text("Grooves:", True), render_text("projectile speed increased")),
+                    (
+                        (400, [(BulletStats.SPEED, 1.5, mul)]),
+                        render_text("Grooves:", True),
+                        render_text("projectile speed increased"),
+                    ),
                 ],  # T1(speed)
                 [
-                    ((550, [(TowerStats.DAMAGE, 1.6, mul)]), render_text("Bullseye:", True), render_text("damage increased")),
                     (
-                        (600, [(BulletStats.SPEED, 1.2, mul), (TowerStats.DAMAGE, 1.2, mul), (BulletStats.SIZE, 1.2, mul)]),
+                        (550, [(TowerStats.DAMAGE, 1.6, mul)]),
+                        render_text("Bullseye:", True),
+                        render_text("damage increased"),
+                    ),
+                    (
+                        (
+                            600,
+                            [
+                                (BulletStats.SPEED, 1.2, mul),
+                                (TowerStats.DAMAGE, 1.2, mul),
+                                (BulletStats.SIZE, 1.2, mul),
+                            ],
+                        ),
                         render_text("Bigger chamber:", True),
                         render_text("bullet speed, damage, size"),
                         render_text("slightly increased"),
@@ -105,12 +145,23 @@ upgrade_dict: dict[
             [  # comes after T1(speed)
                 [
                     (
-                        (1200, [(BulletStats.SIZE, 0.8, mul), (TowerStats.DAMAGE, 0.8, mul), (BulletStats.SPEED, 2.0, mul)]),
+                        (
+                            1200,
+                            [
+                                (BulletStats.SIZE, 0.8, mul),
+                                (TowerStats.DAMAGE, 0.8, mul),
+                                (BulletStats.SPEED, 2.0, mul),
+                            ],
+                        ),
                         render_text("Tiny Bullets:", True),
                         render_text("bullet size/damage lowered"),
                         render_text("bullet speed increased"),
                     ),
-                    ((900, [(BulletStats.PIERCE, 3, add)]), render_text("Needles:", True), render_text("bullet pierce increased")),
+                    (
+                        (900, [(BulletStats.PIERCE, 3, add)]),
+                        render_text("Needles:", True),
+                        render_text("bullet pierce increased"),
+                    ),
                 ],  # T2(Gatling)
                 [
                     (
@@ -130,22 +181,38 @@ upgrade_dict: dict[
             [  # comes after T1(damage)
                 [
                     (
-                        (1100, [(BulletStats.SPEED, 0.8, mul), (TowerStats.DAMAGE, 2.0, mul)]),
+                        (
+                            1100,
+                            [
+                                (BulletStats.SPEED, 0.8, mul),
+                                (TowerStats.DAMAGE, 2.0, mul),
+                            ],
+                        ),
                         render_text("Heavy:", True),
                         render_text("bullet speed slightly lowered"),
                         render_text("damage increased"),
                     ),
                     (
-                        (1300, [(BulletStats.GROWTH, True, set_equal)]),
+                        (1300, [(BulletStats.GROWTH, 1.0, set_equal)]),
                         render_text("Growth:", True),
                         render_text("bullet size and damage"),
                         render_text("increase as the bullet travels"),
                     ),
                 ],  # T2(Sniper)
                 [
-                    ((600, [(TowerStats.RANGE, 1.4, mul)]), render_text("Barrel:", True), render_text("range slightly increased")),
                     (
-                        (1200, [(BulletStats.BULLET_AMOUNT, 4, add), (BulletStats.BULLET_SPREAD, 30, add)]),
+                        (600, [(TowerStats.RANGE, 1.4, mul)]),
+                        render_text("Barrel:", True),
+                        render_text("range slightly increased"),
+                    ),
+                    (
+                        (
+                            1200,
+                            [
+                                (BulletStats.BULLET_AMOUNT, 4, add),
+                                (BulletStats.BULLET_SPREAD, 30, add),
+                            ],
+                        ),
                         render_text("Spread:", True),
                         render_text("increased bullet count and"),
                         render_text("spread"),
@@ -154,24 +221,175 @@ upgrade_dict: dict[
             ],
         ],
     },
-    1: {},
+    1: {
+        0: [
+            [
+                [
+                    (
+                        (150, [(TowerStats.RANGE, 40, add)]),
+                        render_text("Glasses:", True),
+                        render_text("slightly increases range, you"),
+                        render_text("had vision issues"),
+                    ),
+                    (
+                        (200, [(TowerStats.COOLDOWN, 0.9, mul)]),
+                        render_text("Sugary Drink:", True),
+                        render_text("somehow lowers cooldown"),
+                    ),
+                ]
+            ]
+        ],
+        1: [
+            [
+                [
+                    (
+                        (700, [(BulletStats.GROWTH, 1.0, set_equal)]),
+                        render_text("Growing:", True),
+                        render_text("bullet minorly increases"),
+                        render_text("damage and size moving"),
+                    ),
+                    (
+                        (
+                            500,
+                            [
+                                (BulletStats.SPEED, 0.6, mul),
+                                (BulletStats.SIZE, 1.2, mul),
+                            ],
+                        ),
+                        render_text("Big Shot:", True),
+                        render_text("increases bullet size"),
+                        render_text("reduces bullet speed"),
+                    ),
+                ],
+                [
+                    (
+                        (650, [(BulletStats.BLEEDING, True, set_equal)]),
+                        render_text("Hollow-point Bullets:", True),
+                        render_text("makes enemies bleed upon"),
+                        render_text("impact"),
+                    ),
+                    (
+                        (800, [(TowerStats.DAMAGE, 2.0, mul)]),
+                        render_text("Titanium Tips:", True),
+                        render_text("massively increases damage"),
+                    ),
+                ],
+            ]
+        ],
+        2: [
+            [
+                [
+                    (
+                        (1200, [(TowerStats.DAMAGE, 1.9, mul)]),
+                        render_text("Milk:", True),
+                        render_text("increases damage by"),
+                        render_text("strengthening your bones"),
+                    ),
+                    (
+                        (1000, [(TowerStats.RANGE, 1.5, mul)]),
+                        render_text("Scope:", True),
+                        render_text("increases range"),
+                    ),
+                ],
+                [
+                    (
+                        (
+                            1400,
+                            [
+                                (TowerStats.BULLET_CAPACITY, 2, add),
+                                (BulletStats.SIZE, 0.5, mul),
+                            ],
+                        ),
+                        render_text("Smaller Bullets:", True),
+                        render_text("increases bullet capacity"),
+                        render_text("by 2 with smaller bullets"),
+                    ),
+                    (
+                        (
+                            1000,
+                            [
+                                (BulletStats.PIERCE, 2, add),
+                                (BulletStats.SPEED, 1.4, mul),
+                            ],
+                        ),
+                        render_text("Extra Gunpowder:", True),
+                        render_text("increases bullet speed"),
+                        render_text("and pierce"),
+                    ),
+                ],
+            ],
+            [
+                [
+                    (
+                        (1100, [(TowerStats.COOLDOWN, 0.6, mul)]),
+                        render_text("Gear Ratios:", True),
+                        render_text("reduces cooldown through"),
+                        render_text("better gear ratios"),
+                    ),
+                    (
+                        (900, [(TowerStats.ROTATION_SPEED, 1.6, mul)]),
+                        render_text("Lubrication:", True),
+                        render_text("increases tower rotation"),
+                        render_text("speed with lube"),
+                    ),
+                ],
+                [
+                    (
+                        (800, [(BulletStats.SIZE, 1.5, mul)]),
+                        render_text("Chunky:", True),
+                        render_text("bullet size increase"),
+                        render_text("it ate some chunkies"),
+                    ),
+                    (
+                        (1200, [(BulletStats.SLOWING, 1.0, add)]),
+                        render_text("Cold Shot:", True),
+                        render_text("bullets slow enemies"),
+                        render_text("(it got refrigerated)"),
+                    ),
+                ],
+            ],
+        ],
+    },
 }
 
-tier_upgrade_dict: dict[int, dict[int, list[list[list[tuple[list[tuple[TowerStats | BulletStats, float, Any]], *tuple[pygame.Surface, ...]]]]]]] = {
+tier_upgrade_dict: dict[
+    int,
+    dict[
+        int,
+        list[
+            list[
+                list[
+                    tuple[
+                        list[tuple[TowerStats | BulletStats, float, FunctionType]],
+                        *tuple[pygame.Surface, ...],
+                    ]
+                ]
+            ]
+        ],
+    ],
+] = {
     0: {
         0: [
             [
                 [
                     (
-                        [(BulletStats.SPEED, 1.4, mul), (TowerStats.ROTATION_SPEED, 1.4, mul), (TowerStats.COOLDOWN, 0.7, mul)],
+                        [
+                            (BulletStats.SPEED, 1.4, mul),
+                            (TowerStats.ROTATION_SPEED, 1.4, mul),
+                            (TowerStats.COOLDOWN, 0.7, mul),
+                        ],
                         render_text("Speed:", True),
                         render_text("bullet/turn speed increased"),
                         render_text("cooldown slightly reduced"),
                     ),  # T1 path-0
                     (
-                        [(BulletStats.PIERCE, 3, add), (TowerStats.DAMAGE, 1.5, mul), (TowerStats.RANGE, 1.4, mul)],
+                        [
+                            (BulletStats.PIERCE, 3, add),
+                            (TowerStats.DAMAGE, 1.5, mul),
+                            (TowerStats.RANGE, 1.4, mul),
+                        ],
                         render_text("Damage:", True),
-                        render_text("pierce, damage, range "),
+                        render_text("pierce, damage, range"),
                         render_text("slightly increased"),
                     ),  # T1 path-1
                 ]
@@ -195,7 +413,12 @@ tier_upgrade_dict: dict[int, dict[int, list[list[list[tuple[list[tuple[TowerStat
                 ],
                 [
                     (
-                        [(TowerStats.DAMAGE, 1.6, mul), (TowerStats.RANGE, 1.8, mul), (BulletStats.SPEED, 2.0, mul), (TowerStats.COOLDOWN, 1.5, mul)],
+                        [
+                            (TowerStats.DAMAGE, 1.6, mul),
+                            (TowerStats.RANGE, 1.8, mul),
+                            (BulletStats.SPEED, 2.0, mul),
+                            (TowerStats.COOLDOWN, 1.5, mul),
+                        ],
                         render_text("Sniper:", True),
                         render_text("damage, range, projectile"),
                         render_text("speed & cooldown raised"),
@@ -223,11 +446,18 @@ tier_upgrade_dict: dict[int, dict[int, list[list[list[tuple[list[tuple[TowerStat
                         render_text("gains EXTREMELY high"),
                         render_text("pierce"),
                     ),  # T3 path-0-0-0
-                    ([(TowerStats.COOLDOWN, 1, set_equal)], render_text("Full Auto:", True), render_text("even shorter cooldown")),  # T3 path-0-0-1
+                    (
+                        [(TowerStats.COOLDOWN, 1, set_equal)],
+                        render_text("Full Auto:", True),
+                        render_text("even shorter cooldown"),
+                    ),  # T3 path-0-0-1
                 ],
                 [
                     (
-                        [(BulletStats.PIERCE, 1, set_equal), (BulletStats.SHRAPNEL_DAMAGE, 4.0, mul)],
+                        [
+                            (BulletStats.PIERCE, 1, set_equal),
+                            (BulletStats.SHRAPNEL_DAMAGE, 4.0, mul),
+                        ],
                         render_text("Glass Cannon:", True),
                         render_text("all pierce removed, shrapnel"),
                         render_text("damage greatly increased"),
@@ -243,13 +473,19 @@ tier_upgrade_dict: dict[int, dict[int, list[list[list[tuple[list[tuple[TowerStat
             [
                 [
                     (
-                        [(BulletStats.SPEED, 2000, set_equal), (BulletStats.PIERCE, 4, add)],
+                        [
+                            (BulletStats.SPEED, 2000, set_equal),
+                            (BulletStats.PIERCE, 4, add),
+                        ],
                         render_text("Hitscan:", True),
                         render_text("instant projectile speed"),
                         render_text("pierce increased"),
                     ),  # T3 path-1-0-0
                     (
-                        [(TowerStats.DAMAGE, 1.8, mul), (BulletStats.SLOWING, 1.0, add)],
+                        [
+                            (TowerStats.DAMAGE, 1.8, mul),
+                            (BulletStats.SLOWING, 1.0, add),
+                        ],
                         render_text("Lead:", True),
                         render_text("bullets deal more damage"),
                         render_text("and slow enemies"),
@@ -267,36 +503,130 @@ tier_upgrade_dict: dict[int, dict[int, list[list[list[tuple[list[tuple[TowerStat
                         render_text("projectile count and spread"),
                         render_text("lowered, damage increased"),
                     ),  # T3 path-1-1-0
-                    ([(BulletStats.KNOCKBACK, 10, add)], render_text("Shockwave:", True), render_text("attacks knock back enemies")),  # T3 path-1-1-1
+                    (
+                        [(BulletStats.KNOCKBACK, 10, add)],
+                        render_text("Shockwave:", True),
+                        render_text("attacks knock back enemies"),
+                    ),  # T3 path-1-1-1
                 ],
             ],
         ],
-        # 3: [
-        #     [
-        #         [
-        #             ([("", 0.0)], render_text("All upgrades purchased"), render_text("All upgrades purchased"))
-        #         ]
-        #     ]
-        # ]
     },
-    1: {},
+    1: {
+        0: [
+            [
+                [
+                    (
+                        [
+                            (TowerStats.CAMO_DETECTION, 1, add),
+                            (TowerStats.RANGE, 1.2, mul),
+                        ],
+                        render_text("Microfiber Cloth:", True),
+                        render_text("by cleaning your glasses"),
+                        render_text("you gain camo detection"),
+                    ),
+                    (
+                        [(TowerStats.DAMAGE, 1.3, mul)],
+                        render_text("Pointy Tips:", True),
+                        render_text("damage increased through"),
+                        render_text("pointier tips"),
+                    ),
+                ]
+            ]
+        ],
+        1: [
+            [
+                [
+                    (
+                        [(BulletStats.GROWTH, 0.4, add)],
+                        render_text("Growth Spurt:", True),
+                        render_text("increases rate of growth"),
+                    ),
+                    (
+                        [(TowerStats.DAMAGE, 1.5, mul), (BulletStats.SPEED, 0.5, mul)],
+                        render_text("Lead Bullets:", True),
+                        render_text("halves speed and"),
+                        render_text("increases damage"),
+                    ),
+                ],
+                [
+                    (
+                        [(BulletStats.SPEED, 2.5, mul)],
+                        render_text("Aerodynamic:", True),
+                        render_text("massively increases"),
+                        render_text("bullet speed"),
+                    ),
+                    (
+                        [
+                            (TowerStats.DAMAGE, 1.2, mul),
+                            (TowerStats.ROTATION_SPEED, 1.3, mul),
+                            (TowerStats.COOLDOWN, 0.8, mul),
+                            (TowerStats.CAMO_DETECTION, 1, add),
+                            (TowerStats.RANGE, 1.2, mul),
+                        ],
+                        render_text("Jack:", True),
+                        render_text("improves all base"),
+                        render_text("stats"),
+                    ),
+                ],
+            ]
+        ],
+        2: [
+            [
+                [
+                    (
+                        [
+                            (TowerStats.COOLDOWN, 0.3, mul),
+                            (BulletStats.SPEED, 0.2, mul),
+                        ],
+                        render_text("Slowest O.A.T.:", True),
+                        render_text("bullet speed and cd"),
+                        render_text("majorly decreased"),
+                    ),
+                    (
+                        [(TowerStats.DAMAGE, 3, mul)],
+                        render_text("Hardcore:", True),
+                        render_text("boosts damage"),
+                    ),
+                ],
+                [
+                    (
+                        [(BulletStats.BLEEDING, True, set_equal)],
+                        render_text("Spreading:", True),
+                        render_text("bullets cause bleeding"),
+                        render_text("on impact"),
+                    ),
+                    (
+                        [(BulletStats.KNOCKBACK, 7, add)],
+                        render_text("Heavy Bullets:", True),
+                        render_text("bullets have knockback"),
+                    ),
+                ],
+            ],
+            [[([()], render_text("", True)), ([()], render_text("", True))], [([()], render_text("", True)), ([()], render_text("", True))]],
+        ],
+    },
 }
 
 
-def get_upgrades(
-    tower: TowerConstants, tier: int, upgrade_path: list[int]
-) -> list[tuple[tuple[int, list[tuple[TowerStats | BulletStats, float, Any]]], *tuple[pygame.Surface, ...]]]:
+def get_upgrades(tower: TowerConstants, tier: int, upgrade_path: list[int]) -> list[
+    tuple[
+        tuple[int, list[tuple[TowerStats | BulletStats, float, FunctionType]]],
+        *tuple[pygame.Surface, ...],
+    ]
+]:
     tower_number = tower.number
     upgrade_info = upgrade_dict[tower_number][tier]
 
+    # indexes to get rid of un-needed lists
     for i in range(2 - (tier % 3)):
         upgrade_info = upgrade_info[0]
 
     for i in range(tier % 3):
-        if isinstance(upgrade_info, (list, tuple)):
+        if isinstance(upgrade_info, list):
             upgrade_info = upgrade_info[upgrade_path[i + 1]]
 
-    upgrades: list[tuple[tuple[int, list[tuple[TowerStats | BulletStats, float, Any]]], *tuple[pygame.Surface, ...]]] = upgrade_info  # type: ignore
+    upgrades: list[tuple[tuple[int, list[tuple[TowerStats | BulletStats, float, FunctionType]]], *tuple[pygame.Surface, ...]]] = upgrade_info  # type: ignore
 
     return upgrades
 
@@ -311,7 +641,7 @@ def get_tier_ups(
         upgrade_info = upgrade_info[0]
 
     for i in range(tier % 3):
-        if type(upgrade_info) is list or type(upgrade_info) is tuple:
+        if isinstance(upgrade_info, list):
             upgrade_info = upgrade_info[upgrade_path[i + 1]]
 
     tier_ups: list[tuple[list[tuple[TowerStats | BulletStats, float, Any]], *tuple[pygame.Surface, ...]]] = upgrade_info  # type: ignore

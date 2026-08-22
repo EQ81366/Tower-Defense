@@ -1,29 +1,29 @@
 import pygame
 from typing import TYPE_CHECKING, Any
 from constants import TowerConstants, ShopType, TowerStats
-from image_loader import load_images
-from map_sys import show_map, map
-from money import money_script
+from image_loader import image_cache
+from map.map_sys import map_system
+from money import money_man
 from mouse import mouse_info, clicked_and_released
 from tower import Towers, towers
 from fonts import font_25, font_16
 
-tower_images, shop_images = load_images(["tower", "shop"])
+tower_images, shop_images = image_cache["tower"], image_cache["shop"]
 
 pygame.font.init()
 
 
 class Shop(pygame.sprite.Sprite):
     shop_open = False
-    tower_stats: list[pygame.Surface] = []
+    tower_stats: list[tuple[pygame.Surface, pygame.Surface]] = []
     placing_tower = False
     tower_being_bought: TowerConstants
 
     def __init__(self, *groups: Any):
         super().__init__()
 
-        self.path = map(show_map())[0]
-        self.map_offsets = map(show_map())[2]
+        self.map_image = map_system.get_image()
+        self.map_offsets = map_system.get_offsets()  # map(show_map())[2]
 
         self.shop: ShopType | TowerConstants = groups[0]
 
@@ -46,11 +46,26 @@ class Shop(pygame.sprite.Sprite):
             self.text = font_25.render(f"{self.shop.name.capitalize()} ${self.cost}", True, "black").convert_alpha()
 
             self.description = [
-                font_16.render(f"{self.shop.name.capitalize()}:", True, "black").convert_alpha(),
-                font_16.render(f"Damage: {tower_stats[TowerStats.DAMAGE]}", True, "black").convert_alpha(),
-                font_16.render(f"Cooldown: {tower_stats[TowerStats.COOLDOWN]}", True, "black").convert_alpha(),
-                font_16.render(f"Range: {tower_stats[TowerStats.RANGE]}", True, "black").convert_alpha(),
-                font_16.render(f"R-Speed:  {tower_stats[TowerStats.ROTATION_SPEED]}", True, "black").convert_alpha(),
+                (
+                    font_16.render(f"{self.shop.name.capitalize()}", True, "black").convert_alpha(),
+                    font_16.render("", True, "black").convert_alpha(),
+                ),
+                (
+                    font_16.render("Damage:", True, "black").convert_alpha(),
+                    font_16.render(f"{tower_stats[TowerStats.DAMAGE]}", True, "black").convert_alpha(),
+                ),
+                (
+                    font_16.render("Cooldown:", True, "black").convert_alpha(),
+                    font_16.render(f"{tower_stats[TowerStats.COOLDOWN]}", True, "black").convert_alpha(),
+                ),
+                (
+                    font_16.render("Range:", True, "black").convert_alpha(),
+                    font_16.render(f"{tower_stats[TowerStats.RANGE]}", True, "black").convert_alpha(),
+                ),
+                (
+                    font_16.render("R-Speed:", True, "black").convert_alpha(),
+                    font_16.render(f"{tower_stats[TowerStats.ROTATION_SPEED]}", True, "black").convert_alpha(),
+                ),
             ]
 
             self.clicked = False
@@ -76,7 +91,7 @@ class Shop(pygame.sprite.Sprite):
     # checks if the shop is open and if so, displays all the items in the shop
     def showing(self, screen: pygame.Surface):
         if Shop.shop_open and type(self.shop) is TowerConstants:
-            money = money_script(None, 0)
+            money = money_man.get_money()
 
             mouse_xy, mouse_down = mouse_info()
 
@@ -89,18 +104,13 @@ class Shop(pygame.sprite.Sprite):
                 ),
             )
 
-            # if the mouse is down when hovering over an item in the shop, it will wait until mouse not down, and attempt to buy that item
             pressed, self.clicked = clicked_and_released(mouse_down, self.clicked)
-            if self.rect.collidepoint(mouse_xy):
-                # hovering_on_tower used to determine whether to show tower stats
-                Shop.tower_stats = self.description
+            if self.rect.collidepoint(mouse_xy):  # separated hover and click to show desc on hover
+                Shop.tower_stats = self.description  # shows desc
                 if pressed and money >= self.cost:
-                    money_script(False, self.cost)
+                    money_man.sub_money(self.cost)
                     Shop.placing_tower = True
                     Shop.tower_being_bought = self.shop
-                    return (True, self.shop)
-
-        return False, self.shop
 
     # if the user bought a tower from the shop, it will follow the mouse until placed
     def place_tower(self, screen: pygame.Surface):
@@ -110,9 +120,10 @@ class Shop(pygame.sprite.Sprite):
             self.rect.centerx = mouse_xy[0]
             self.rect.centery = mouse_xy[1]
             screen.blit(self.image, self.rect)
+            Towers.range(screen, Shop.tower_being_bought.constants[4], self.rect.centerx, self.rect.centery)
 
             mask1 = pygame.mask.from_surface(self.image)
-            mask2 = pygame.mask.from_surface(self.path)
+            mask2 = pygame.mask.from_surface(self.map_image)
 
             offset_x = self.map_offsets[0] - self.rect.left
             offset_y = self.map_offsets[1] - self.rect.top
@@ -139,9 +150,26 @@ class Shop(pygame.sprite.Sprite):
 
             for i in range(len(Shop.tower_stats)):
                 screen.blit(
-                    Shop.tower_stats[i],
-                    (self.rect.topleft[0] + 10, self.rect.topleft[1] + 5 + 17 * i),
+                    Shop.tower_stats[i][0],
+                    (self.rect.left + 10, self.rect.top + 5 + 17 * i),
                 )
+                screen.blit(
+                    Shop.tower_stats[i][1],
+                    (
+                        self.rect.right - Shop.tower_stats[i][1].get_width() - 10,
+                        self.rect.top + 5 + 17 * i,
+                    ),
+                )
+
+    def update(self, screen: pygame.Surface):
+        self.hovering(screen)
+        self.showing(screen)
+        self.place_tower(screen)
+        self.show_stats(screen)
+
+    @classmethod
+    def reset(cls):
+        cls.tower_stats = []
 
 
 if TYPE_CHECKING:
