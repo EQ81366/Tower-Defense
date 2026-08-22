@@ -16,7 +16,7 @@ class EnemyShape(Enum):
 class EnemyConstants(Enum):
     # [A, B, C, D, E, (F)]
     # replace A with (image type, color), B with tier, C with speed, D with hp, E with weight, (F with custom money drop)
-    BASIC = (((EnemyShape.CIRCLE, (0, 0, 0)), 0, 2.0, 100, 2), 0, (False, 0))
+    BASIC = (((EnemyShape.CIRCLE, (0, 0, 0)), 0, 2.0, 1, 2), 0, (False, 0))
     TANK = (((EnemyShape.CIRCLE, (0, 255, 0)), 0, 0.5, 100, 4), 1, (False, 0))
 
     def __init__(

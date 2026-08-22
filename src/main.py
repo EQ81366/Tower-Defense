@@ -1,5 +1,5 @@
 if __name__ == "__main__":
-    import pygame, os, numpy
+    import pygame, os
 
     os.environ["DISPLAY"] = ":1"
 
@@ -110,7 +110,6 @@ if __name__ == "__main__":
             Enemies.update_xy()
             enemies.update(screen)
             health_points -= Enemies.c_frame_dmg
-            enemy_amount = len(enemies)
             # --------------------------------------------------------------------- #
 
             local_enemy_xy = enemy_xy[enemy_alive]
@@ -128,7 +127,7 @@ if __name__ == "__main__":
             # ------------------------------------------------------------- #
             # cycles through all the necessary commands for the towers group
             # ------------------------------------------------------------- #
-            towers.update(screen, enemy_xy, upgrade_background.rect)
+            towers.update(screen, upgrade_background.rect)
             # -----------------------------------------------------------------------#
 
             # ---------------------------------------------------------------- #
@@ -155,7 +154,7 @@ if __name__ == "__main__":
 
             x += 1
             if x > 10:
-                for i in range(10000):
+                for i in range(10):
                     # enemies.add(Enemies(EnemyConstants.BASIC))
                     spawn_enemy(EnemyConstants.BASIC)
                 x = -10000000

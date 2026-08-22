@@ -6,7 +6,7 @@ from constants import TowerConstants, TargetingStates, TowerStats, BulletStats
 from image_loader import get_resource_path, image_cache
 from tower_aiming import point_enemy
 from mouse import mouse_info, clicked_and_released
-from enemy import enemies, enemy_progress, enemy_camo, enemy_mhp
+from enemy import enemies, enemy_progress, enemy_camo, enemy_mhp, enemy_xy
 from tower_projectiles import TowerProjectiles, tower_projectiles
 from pathlib import Path
 from scipy.spatial.distance import cdist
@@ -123,7 +123,7 @@ class Towers(pygame.sprite.Sprite):
             )
 
     # finds the closest enemy
-    def find_closest_enemy(self, enemy_xy: numpy.ndarray):
+    def find_closest_enemy(self):
         if len(enemies) > 0:
             closest_id = -1
 
@@ -140,9 +140,10 @@ class Towers(pygame.sprite.Sprite):
                 idxs = points[int(i)][1]
                 for idx in idxs:
                     enemy_idxs.append(idx)
+                    break
 
             relative_positions = enemy_xy[enemy_idxs] - xy
-            distance = numpy.sum(relative_positions * relative_positions, axis=1)
+            distance: numpy.ndarray = numpy.sum(relative_positions * relative_positions, axis=1)
 
             tower_range = self.stats[TowerStats.RANGE]
             valid = (distance <= tower_range * tower_range) & (enemy_camo[enemy_idxs] <= self.stats[TowerStats.CAMO_DETECTION])
@@ -257,7 +258,6 @@ class Towers(pygame.sprite.Sprite):
     def update(
         self,
         screen: pygame.Surface,
-        enemy_xy: numpy.ndarray,
         upgrade_rect: pygame.Rect,
     ):
         self.wait += 1
@@ -266,7 +266,7 @@ class Towers(pygame.sprite.Sprite):
             self.in_range()
 
         self.rotate(screen)
-        self.find_closest_enemy(enemy_xy)
+        self.find_closest_enemy()
         self.open_upgrades(upgrade_rect)
         self.show_range(screen)
 

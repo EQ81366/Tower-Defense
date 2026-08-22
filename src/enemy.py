@@ -1,5 +1,5 @@
 import pygame, math, pygame.gfxdraw, numpy
-from numpy import zeros, int8, int16, sum
+from numpy import zeros, int8, sum
 from typing import TYPE_CHECKING, Any
 from image_loader import image_cache
 from constants import EnemyConstants, EnemyShape, EnemyAbilities
@@ -231,6 +231,7 @@ class Enemies(pygame.sprite.Sprite):
             slots_available.append(self.id)
             enemy_alive[self.id] = False
             enemy_objects[self.id] = None
+            map_system.remove_enemy_pos(int(self.point), self.id)
             return
 
         self.pathfind(screen)

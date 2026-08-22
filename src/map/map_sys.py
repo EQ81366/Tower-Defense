@@ -51,10 +51,12 @@ class MapSystem:
         return self.distance_b_points
 
     def set_enemy_pos(self, index: int, enemy_idx: int):
-        self.all_nodes[index][1].add(enemy_idx)
+        if index+1 < len(self.all_nodes):
+            self.all_nodes[index][1].add(enemy_idx)
 
     def remove_enemy_pos(self, index: int, enemy_idx: int):
-        self.all_nodes[index][1].remove(enemy_idx)
+        if index+1 < len(self.all_nodes):
+            self.all_nodes[index][1].remove(enemy_idx)
 
 
 def create_map():
