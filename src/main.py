@@ -138,8 +138,11 @@ if __name__ == "__main__":
                 upgrade_background.hovering(tower_selected.upgrades_open, tower_selected.right_side, screen)
 
                 upgrade_index = upgrade_manager.upgrades(tower_selected, screen)
-                if upgrade_index is not None:  # if upgrade or tierup clicked
+                if upgrade_index is not None and upgrade_index < 3:  # if upgrade or tierup clicked
                     upgrade_manager.buy_upgrade(tower_selected, upgrade_index)  # subtracts cost and applied upgrade effect to tower
+
+                elif upgrade_index == 3:
+                    upgrade_manager.skip_upgrade_set(tower_selected)
             # ------------------------------------------------------------------------------------ #
 
             # ------------------------------------------------------------ #
@@ -154,10 +157,9 @@ if __name__ == "__main__":
 
             x += 1
             if x > 10:
-                for i in range(10):
-                    # enemies.add(Enemies(EnemyConstants.BASIC))
+                for i in range(1):
                     spawn_enemy(EnemyConstants.BASIC)
-                x = -10000000
+                x = -10
 
             # for point in map_system.all_nodes:
             #     pygame.draw.rect(screen, "red", (point[0], (10, 10)))
@@ -165,7 +167,7 @@ if __name__ == "__main__":
         pygame.display.flip()
         clock.tick(60)
         fps = clock.get_fps()
-        # print(fps, len(enemies), len(towers))
+        print(fps, len(enemies), len(towers))
         # print(fps)
         # print(Enemies.damage_dealt)
         if fps < 5 and frame_check == 100:

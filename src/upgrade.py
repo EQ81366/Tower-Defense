@@ -1,7 +1,7 @@
 import pygame
 from types import FunctionType
 from image_loader import image_cache
-from upgrade_loader import get_upgrades, get_tier_ups
+from upgrade_loader import get_upgrades, get_tier_ups, render_text
 from money import money_man
 from mouse import mouse_info, clicked_and_released
 from fonts import font_30, font_25
@@ -50,6 +50,8 @@ class Upgrades(Upgrade):
 
         self.clicked = False
         self.rect_two = self.image.get_rect(center=(self.x, self.y + 80))
+        self.rect_three = self.image.get_rect(center=(self.x, self.y + 160))
+        self.skip_text = render_text(f"Skip for", True)
 
     def upgrades(self, tower: Towers, screen: pygame.Surface):
         if tower.upgrades_open:
@@ -65,9 +67,11 @@ class Upgrades(Upgrade):
             if tower.right_side:
                 self.rect.centerx = self.x
                 self.rect_two.centerx = self.x
+                self.rect_three.centerx = self.x
             else:
                 self.rect.centerx = (self.x - 640) * -1 + 640
-                self.rect_two.centerx = (self.x - 640) * -1 + 640
+                self.rect_two.centerx = self.rect.centerx
+                self.rect_three.centerx = self.rect.centerx
 
             # shows the tower selected in upgrade menu
             images = tower_images[tower_enum]
@@ -99,6 +103,17 @@ class Upgrades(Upgrade):
                     upgrade_one, upgrade_two = get_tier_ups(tower_enum, tower_tier, tower.upgrade_path)
                 else:
                     upgrade_one, upgrade_two = get_upgrades(tower_enum, tower_tier, tower.upgrade_path)
+                    cost_one = upgrade_one[0][0]
+                    cost_two = upgrade_two[0][0]
+
+                    cost_one_text = render_text(f"${cost_one}", True)
+                    cost_two_text = render_text(f"${cost_two}", True)
+
+                    offset_one_x = self.rect.right - cost_one_text.get_width() - 7
+                    screen.blit(cost_one_text, (offset_one_x, self.rect.y + 6))
+
+                    offset_two_x = self.rect_two.right - cost_two_text.get_width() - 7
+                    screen.blit(cost_two_text, (offset_two_x, self.rect_two.y + 6))
 
                 upgrade_one_info, *upgrade_one_text = upgrade_one
                 upgrade_two_info, *upgrade_two_text = upgrade_two
@@ -124,9 +139,20 @@ class Upgrades(Upgrade):
                         (x, y),
                     )
 
+                skip_cost = (1 + tower_tier) * 500
+                if not fully_upgraded:
+                    screen.blit(self.image, (self.rect.x, self.rect_three.y))
+                    skip_cost_text = render_text(f"${skip_cost}", True)
+                    offset_x = self.rect_three.right - skip_cost_text.get_width() - 7
+                    screen.blit(skip_cost_text, (offset_x, self.rect_three.y + 6))
+                    screen.blit(self.skip_text, (x, self.rect_three.y + 6))
+
                 pressed, self.clicked = clicked_and_released(mouse_down, self.clicked)
 
                 if pressed:
+                    if self.rect_three.collidepoint(mouse_xy) and money >= skip_cost:
+                        return 3
+
                     if fully_upgraded and type(upgrade_one_info) is list and type(upgrade_two_info) is list:
                         if self.rect.collidepoint(mouse_xy):
                             Upgrades.tier_info = upgrade_one_info
@@ -172,6 +198,9 @@ class Upgrades(Upgrade):
 
                 elif type(upgrading) is BulletStats:
                     tower.bullet_stats[upgrading] = upgrade_function(tower.bullet_stats[upgrading], stat_value_mod)
+
+    def skip_upgrade_set(self, tower: Towers):
+        tower.upgrades_bought[tower.stats[TowerStats.TIER]] = [True, True]
 
 
 upgrade_manager = Upgrades(1160, 360)

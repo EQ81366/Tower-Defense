@@ -1,4 +1,4 @@
-import math
+import math, numpy
 
 
 # finds the angle from an object towards the mouse
@@ -28,3 +28,11 @@ def point_enemy(x: int, y: int, x2: int, y2: int):
             direction = -90 - (math.atan((y2 - y) / (x2 - x))) * (180 / math.pi)
 
     return direction
+
+
+def point_all_enemies(xy: tuple[int, int], enemy_xy: numpy.ndarray):
+    delta = enemy_xy - xy
+
+    angle_rad = numpy.arctan2(delta[:, 0], delta[:, 1])
+    angle_deg = numpy.degrees(angle_rad)
+    return angle_deg
