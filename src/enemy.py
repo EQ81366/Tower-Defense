@@ -3,7 +3,7 @@ from numpy import zeros, int8, sum
 from typing import TYPE_CHECKING, Any
 from image_loader import image_cache
 from constants import EnemyConstants, EnemyShape, EnemyAbilities
-from map.map_sys import map_system
+from map_sys import map_system
 from fonts import font_30
 
 enemy_images = image_cache["enemy"]

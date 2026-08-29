@@ -10,7 +10,7 @@ from enemy import enemies, enemy_progress, enemy_camo, enemy_mhp, enemy_xy
 from tower_projectiles import TowerProjectiles, tower_projectiles
 from pathlib import Path
 from scipy.spatial.distance import cdist
-from map.map_sys import map_system
+from map_sys import map_system
 
 tower_images = image_cache["tower"]
 

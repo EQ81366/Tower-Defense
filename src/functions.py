@@ -37,10 +37,10 @@ def get_mem_use():
 def __init__():
     load_images()
 
-    from map.map_sys import create_map
+    from map_sys import create_map
 
     create_map()
-    from map.map_sys import map_system
+    from map_sys import map_system
     from constants import TowerConstants, MapInfo
 
     map_system.set_map(MapInfo.path1)

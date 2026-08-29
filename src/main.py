@@ -19,7 +19,7 @@ if __name__ == "__main__":
     from money import money_man
     from tower_projectiles import tower_projectiles
     from mouse import mouse_info, clicked_and_released
-    from map.map_sys import map_system
+    from map_sys import map_system
     from fonts import font_50
 
     bullet_stats = {stat: TowerConstants.BASIC.bullet_info[i] for i, stat in enumerate(BulletStats)}

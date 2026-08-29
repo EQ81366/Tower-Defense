@@ -2,7 +2,7 @@ import pygame
 from typing import TYPE_CHECKING, Any
 from constants import TowerConstants, ShopType, TowerStats
 from image_loader import image_cache
-from map.map_sys import map_system
+from map_sys import map_system
 from money import money_man
 from mouse import mouse_info, clicked_and_released
 from tower import Towers, towers

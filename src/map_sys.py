@@ -1,6 +1,6 @@
 import pygame, json
 from numpy import ndarray, zeros
-from image_loader import image_cache
+from image_loader import image_cache, get_resource_path
 from pathlib import Path
 from constants import MapInfo
 from functions import lerp
@@ -8,7 +8,7 @@ from functions import lerp
 
 class MapSystem:
     map_images = image_cache["map"]
-    with open(Path("src/map/map_nodes.json"), "r") as file:
+    with open(get_resource_path(Path("assets/map_nodes.json")), "r") as file:
         nodes_file = json.load(file)
 
     def __init__(self):
