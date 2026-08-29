@@ -3,3 +3,6 @@ src/map/__pycache__
 .vscode
 testing.py
 svgs
+tower-defense.spec
+dist/
+build/
